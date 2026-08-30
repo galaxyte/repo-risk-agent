@@ -98,7 +98,7 @@ class ToolExecutor:
             "content": data.decode("utf-8", errors="replace"),
         }
 
-    def run_command(self, cmd: list[str], cwd: str = ".", timeout_sec: int = 120) -> dict:
+    def run_command(self, cmd: list[str], cwd: str = ".", timeout_sec: int = 60) -> dict:
         result = self.sandbox.run(cmd, cwd=cwd, timeout_sec=timeout_sec)
         d = self._cmd_result_dict(result)
         # Truncate only here (the model-facing tool), not inside Sandbox.run itself -- other

@@ -52,7 +52,18 @@ def docker_available() -> bool:
     return shutil.which("docker") is not None
 
 
+def _image_exists() -> bool:
+    result = subprocess.run(["docker", "image", "inspect", IMAGE_NAME], capture_output=True, text=True)
+    return result.returncode == 0
+
+
 def ensure_image_built(dockerfile: Path) -> None:
+    # Every assess_repo() call used to re-invoke `docker build` unconditionally --
+    # even with layer caching that's a wasted daemon round-trip on every single
+    # repo. Skip it entirely once the image already exists; rebuild only when it
+    # doesn't (first run, or after `docker rmi`).
+    if _image_exists():
+        return
     subprocess.run(
         ["docker", "build", "-q", "-t", IMAGE_NAME, "-f", str(dockerfile), str(dockerfile.parent)],
         check=True,
@@ -109,7 +120,7 @@ class Sandbox:
             check=True, capture_output=True, text=True,
         )
 
-    def run(self, argv: list[str], *, cwd: str = ".", timeout_sec: int = 120) -> CommandResult:
+    def run(self, argv: list[str], *, cwd: str = ".", timeout_sec: int = 60) -> CommandResult:
         if not self._started:
             raise RuntimeError("Sandbox.start() must be called before run()")
         if not argv:
@@ -120,6 +131,9 @@ class Sandbox:
                 stderr=f"command '{argv[0]}' is not in the sandbox allowlist: {sorted(COMMAND_ALLOWLIST)}",
                 timed_out=False, duration_sec=0.0,
             )
+        # Cap stays generous (unlike the agent's own default suggestion below) --
+        # eval/reference_pass.py legitimately needs longer install/test timeouts
+        # for larger repos and calls this with explicit values up to 240s.
         timeout_sec = min(timeout_sec, 300)
         full_cmd = ["docker", "exec", "-w", f"/workspace/{cwd}".replace("//", "/"), self.container_name, *argv]
         start = time.monotonic()

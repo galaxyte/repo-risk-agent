@@ -27,8 +27,15 @@ from agent.verify import self_check_and_repair
 from shared.schema import RiskReport, submit_report_tool
 
 MAX_TURNS = 15
-WALL_CLOCK_BUDGET_SEC = 480
+WALL_CLOCK_BUDGET_SEC = 300
 FORCE_SUBMIT_FRACTION = 0.75
+# "medium" is what the committed eval results (results/summary.md) were generated
+# with -- it's slower but more thorough (e.g. it persists through a blocked pip
+# install by trying a venv workaround, and catches more of the planted findings
+# in the demo fixture). Set AGENT_REASONING_EFFORT=low in .env for faster, less
+# thorough runs during quick manual testing -- don't change the default here
+# without re-running the eval, since it changes what's actually being measured.
+REASONING_EFFORT = os.environ.get("AGENT_REASONING_EFFORT", "medium")
 
 # Ablation variants used to build genuine changelog evidence cheaply (same tool
 # infra, different system prompt / post-processing). See CHANGELOG.md.
@@ -115,7 +122,7 @@ def assess_repo(
                     tools=call_tools,
                     tool_choice=tool_choice,
                     parallel_tool_calls=not force_submit,
-                    reasoning={"effort": "medium"},
+                    reasoning={"effort": REASONING_EFFORT},
                     previous_response_id=previous_response_id,
                 )
                 previous_response_id = resp.id

@@ -63,7 +63,14 @@ RUN_COMMAND = {
         "properties": {
             "cmd": {"type": "array", "items": {"type": "string"}, "description": "Argv, e.g. [\"pytest\", \"-q\"]."},
             "cwd": {"type": "string", "description": "Working directory relative to repo root. Use '.' for root."},
-            "timeout_sec": {"type": "integer", "description": "Timeout in seconds, max 300. Use 120 by default."},
+            "timeout_sec": {
+                "type": "integer",
+                "description": (
+                    "Timeout in seconds, max 300. Use 60 for most commands (tests, lint, quick "
+                    "installs); only go higher (up to 180) for a dependency install you expect to "
+                    "be slow. You have a limited overall time budget -- don't default to the max."
+                ),
+            },
         },
         "required": ["cmd", "cwd", "timeout_sec"],
         "additionalProperties": False,
