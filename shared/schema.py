@@ -89,7 +89,14 @@ _RED_FLAG_SCHEMA = {
             "type": ["string", "null"],
             "description": "Required (non-null) when source == tool_output.",
         },
-        "file_ref": {"type": ["string", "null"], "description": "e.g. 'src/app.py:120'"},
+        "file_ref": {
+            "type": ["string", "null"],
+            "description": (
+                "e.g. 'src/app.py:120'. Set whenever the finding is about a specific file, "
+                "independent of `source` -- including tool_output findings where the tool "
+                "result itself names the file (secrets scan, complexity, large-file signals)."
+            ),
+        },
     },
     "required": ["title", "severity", "evidence", "source", "tool_call_id", "file_ref"],
     "additionalProperties": False,

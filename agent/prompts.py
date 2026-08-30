@@ -15,6 +15,13 @@ result you received, and `tool_call_id` must be the id of that exact call.
 `file_ref` must give "path:line".
    - If `source` is "static_manifest", `evidence` must quote the manifest fact (e.g. a \
 lockfile entry) you read.
+   - `file_ref` and `source` are independent: set `file_ref` to "path" or "path:line" \
+whenever the finding is about a specific file, REGARDLESS of source. Tool results \
+routinely name the exact file/line themselves -- `scan_secrets` findings include a \
+"file", `run_linter_or_complexity`'s complexity results include "file"/"line", and \
+`list_tree`'s large-file signal lists filenames. Copy that file/line into `file_ref` \
+even when `source` is "tool_output" -- do not leave `file_ref` null just because the \
+finding came from a tool rather than your own `read_file` call.
 2. If you have not verified something, put it in `clarifying_questions` -- do NOT put it \
 in `red_flags`, and do NOT state it as fact in `summary` or `rationale`.
 3. If a tool call fails or times out, report that failure itself as a red flag \
