@@ -1,0 +1,11 @@
+{
+  "repo_name": "invoice-lite-legacy",
+  "model": "gpt-5",
+  "variant": "full",
+  "turns_used": 13,
+  "wall_clock_sec": 115.4,
+  "input_tokens": 90088,
+  "output_tokens": 7071,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

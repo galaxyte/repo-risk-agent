@@ -1,0 +1,99 @@
+{
+  "repo_name": "invoice-lite-legacy",
+  "risk_score": 78,
+  "effort_multiplier": 1.8,
+  "summary": "Small Flask API skeleton with significant security and quality risks. Committed secrets, debug mode exposed on 0.0.0.0, no auth, in-memory storage, intentionally wrong test, large unrefactored legacy-style utility module, and lingering Python 2 code. Dependencies are pinned to older versions. Feature claims in README (PDF, email, Stripe, multi-currency) are not evident in the provided code snapshot, suggesting potential scope gaps.",
+  "red_flags": [
+    {
+      "title": "Committed secrets in repository",
+      "severity": "critical",
+      "evidence": "# Application configuration. TODO: move to environment variables before launch.\n\nDB_PASSWORD = \"SuperSecret123!\"\nSTRIPE_API_KEY = \"sk_test_FAKE1234567890abcdefghijklmno\"\nSECRET_KEY = \"dev-secret-do-not-use-in-prod\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "config.py"
+    },
+    {
+      "title": "Flask app runs with debug=True and binds to 0.0.0.0",
+      "severity": "high",
+      "evidence": "app.run(debug=True, host=\"0.0.0.0\")",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "app.py"
+    },
+    {
+      "title": "No authentication/authorization on invoice endpoints",
+      "severity": "high",
+      "evidence": "@app.route(\"/invoices\", methods=[\"GET\"])\ndef list_invoices():\n    return jsonify(INVOICES)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "app.py"
+    },
+    {
+      "title": "In-memory invoice storage (no persistence)",
+      "severity": "medium",
+      "evidence": "INVOICES = []",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "app.py"
+    },
+    {
+      "title": "Intentionally incorrect test assertion likely to fail CI",
+      "severity": "medium",
+      "evidence": "# Planted edge case: this assertion is simply wrong (expects 100 instead of\n# 10). calculate_total itself is correct -- the test is the bug.\n...\nassert app_module.calculate_total(invoices) == 100",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "tests/test_invoices.py"
+    },
+    {
+      "title": "Unrefactored, copy-pasted utility code indicates high maintenance cost",
+      "severity": "medium",
+      "evidence": "# Grab-bag utility module -- grew organically, never refactored.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "big_utils.py"
+    },
+    {
+      "title": "Legacy Python 2 code retained in repo",
+      "severity": "low",
+      "evidence": "# Legacy reporting module -- kept for reference from the old system.\n# Not imported by app.py; nobody has gotten around to porting it to Python 3.\n...\nprint \"Generating legacy summary...\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "legacy_report.py"
+    },
+    {
+      "title": "Outdated dependency pins (may have known CVEs and upgrade effort)",
+      "severity": "medium",
+      "evidence": "Flask==2.0.1\nWerkzeug==2.0.1\nrequests==2.25.1\nPyYAML==6.0.1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt"
+    },
+    {
+      "title": "Missing input validation/error handling in create_invoice",
+      "severity": "medium",
+      "evidence": "invoice = {\"id\": len(INVOICES) + 1, \"client\": data[\"client\"], \"amount\": data[\"amount\"]}",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "app.py"
+    }
+  ],
+  "clarifying_questions": [
+    "Which README features are in scope now (PDF export, automatic email delivery, multi-currency, Stripe payment links)? Are they implemented elsewhere or to-be-built?",
+    "What is the target deployment environment? Is the expectation to run behind a reverse proxy with proper production settings (no debug, restricted host)?",
+    "Are the committed secrets real or placeholders? Can we rotate and move them to environment variables immediately?",
+    "What persistence layer is desired (Postgres/MySQL/SQLite/Cloud DB)? Do you have an existing schema or migration history?",
+    "What authentication/authorization model is required (API keys, JWT, OAuth)? Is the API intended to be multi-tenant?",
+    "Should the intentionally wrong test be fixed or removed? Do you have desired test coverage and a CI pipeline preference (GitHub Actions, GitLab CI, etc.)?",
+    "What Python version is the target? Is it acceptable to delete or ignore the Python 2 legacy module?",
+    "Are we allowed to upgrade dependencies (Flask/Requests/Werkzeug/PyYAML)? Do you have org policies on minimum versions? Should we run a dependency audit (pip-audit/Safety)?",
+    "Which providers/libraries should be used for PDF generation and email delivery? Do you have design templates and content requirements for PDFs/emails?",
+    "Is Stripe already configured in another service, and is the provided STRIPE_API_KEY a test key only? Should we set up webhooks?",
+    "Do you have data retention, PII handling, and logging requirements (e.g., GDPR, SOC2)?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The codebase is small but has critical security hygiene issues and signals of technical debt. There is likely a non-trivial gap between README promises and implemented functionality. With clear scope, agreement to rotate/remove secrets, implement auth and persistence, fix tests, and upgrade dependencies, the project is feasible. Without those conditions, risk of overruns and security exposure is high.",
+  "build_status": "not_attempted",
+  "test_status": "not_attempted",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

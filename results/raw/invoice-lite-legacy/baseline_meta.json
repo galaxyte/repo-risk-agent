@@ -1,0 +1,8 @@
+{
+  "repo_name": "invoice-lite-legacy",
+  "model": "gpt-5",
+  "wall_clock_sec": 58.0,
+  "input_tokens": 14791,
+  "output_tokens": 4088,
+  "file_dump_chars": 57484
+}

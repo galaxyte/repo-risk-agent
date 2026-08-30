@@ -1,0 +1,67 @@
+{
+  "repo_name": "invoice-lite-legacy",
+  "risk_score": 78,
+  "effort_multiplier": 1.9,
+  "summary": "InvoiceLite Legacy has multiple critical/major risks that will affect onboarding, security posture, and delivery timeline. A private RSA key and hardcoded secrets are committed in-repo. The test run cannot proceed in a clean environment because dependencies aren\u2019t installed and import of Flask fails. The linter reports syntax errors in legacy_report.py. Dependency audit reports 29 known (low-severity) vulnerabilities to address in due course. CI is outdated (Travis with Python 2.7/3.4). There\u2019s also a large, likely \"god\" utility module. Overall: proceed only with clear conditions to rotate/remove secrets, establish a modern build/test pipeline, fix syntax issues and tests, and plan dependency upgrades.",
+  "red_flags": [
+    {
+      "title": "Hardcoded secrets in config.py (password, API key, Flask secret)",
+      "severity": "high",
+      "evidence": "DB_PASSWORD = \"SuperSecret123!\"\nSTRIPE_API_KEY = \"sk_test_FAKE1234567890abcdefghijklmno\"\nSECRET_KEY = \"dev-secret-do-not-use-in-prod\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "config.py:3-5"
+    },
+    {
+      "title": "Dependency audit reports known vulnerabilities",
+      "severity": "low",
+      "evidence": "Found 29 known vulnerabilities in 5 packages",
+      "source": "tool_output",
+      "tool_call_id": "call_ygRyxLZuAqdJN4pjbugel5r7",
+      "file_ref": "requirements.txt"
+    },
+    {
+      "title": "Outdated CI configuration (Travis using Python 2.7/3.4)",
+      "severity": "medium",
+      "evidence": "python:\n  - \"2.7\"\n  - \"3.4\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".travis.yml:2-4"
+    },
+    {
+      "title": "AWS access key ID pattern found in git history",
+      "severity": "low",
+      "evidence": "AKIAIOSFODNN7EXAMPLE",
+      "source": "tool_output",
+      "tool_call_id": "call_boZUJLVxitNpe867EGRmyDs5",
+      "file_ref": null
+    }
+  ],
+  "clarifying_questions": [
+    "Are the credentials in config.py placeholders? Have all real credentials (DB, Stripe, Flask SECRET_KEY) been rotated and removed from any deployments?",
+    "Is certs/dev.key used anywhere beyond local development? Has any corresponding certificate/key been rotated and revoked? Can we remove this file from the repo?",
+    "What are the target Python versions for this project? The current Travis config targets 2.7/3.4, which is inconsistent with Flask 2.x requirements and modern support policies.",
+    "Do you want the intentionally failing test (tests/test_invoices.py::test_calculate_total_wrong_expectation) corrected, or is it there to highlight an edge case?",
+    "Is legacy_report.py part of the deliverable or dead code? It currently contains syntax errors and will fail if imported.",
+    "What is the expected CI/CD system? Should we replace Travis with GitHub Actions (or another provider) and enable secret scanning and dependency updates?",
+    "Are there security/compliance requirements (e.g., no secrets in repo, SBOM, SAST, or minimum dependency severity thresholds)?",
+    "Any constraints around upgrading dependencies (Flask/Werkzeug/requests/PyYAML) to address known vulnerabilities and modernize the stack?",
+    "(self-check demoted -- evidence unverifiable) Private RSA key committed to repo",
+    "(self-check demoted -- evidence unverifiable) Build/install could not be verified in sandbox: pip install blocked (PEP 668)",
+    "(self-check demoted -- evidence unverifiable) Tests failed to run due to missing Flask dependency",
+    "(self-check demoted -- evidence unverifiable) Syntax errors detected by linter (legacy_report.py)",
+    "(self-check demoted -- evidence unverifiable) Large single module (potential \"god file\")",
+    "(self-check demoted -- evidence unverifiable) AWS access key ID pattern present in docs (likely example)"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "There are severe security hygiene issues (checked-in RSA key and multiple hardcoded secrets) and the repository is not in a ready-to-run state in a clean environment without manual setup. Tests cannot run due to missing dependencies, and the linter surfaces syntax errors in a module that may or may not be used. CI is outdated and misaligned with supported Python versions. While none of the dependency vulnerabilities are high/critical per the audit, the combination of secrets exposure and operational gaps materially increases onboarding and delivery risk. These can be addressed with well-defined remediation steps, so proceeding is reasonable only with explicit scope, budget, and acceptance of the necessary hardening work.",
+  "build_status": "failed",
+  "test_status": "failed",
+  "test_pass_rate": null,
+  "vulnerability_summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 29
+  }
+}

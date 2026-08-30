@@ -1,26 +1,84 @@
 # Solution Video — Shot List (target: under 5 minutes)
 
-## 0:00–0:45 — Problem & baseline
-- "I'm a freelance software engineer. Before I quote a price on a new client project, I have to figure out if their codebase is healthy or a trap — and today that means either hours of manual digging, or the shortcut everyone actually takes: paste some files into an LLM and ask if it looks okay."
-- Show the baseline shortcut live on `django-dialogflow` (a real repo with a `.travis.yml` claiming CI + coverage, but pinned to Django 1.11 / Python 2.7-3.5): open `results/raw/django-dialogflow/baseline_report.json`, point at `build_status`/`test_status` — the baseline (correctly, since it was told not to guess) reports these as `"unknown"`. It looks safe but tells the freelancer nothing.
+**Format:** screen recording + voice narration (no webcam needed). One take is fine — QuickTime
+(macOS: File → New Screen Recording, select your mic first) or OBS both work.
 
-## 0:45–3:00 — One realistic execution, start to finish
-- Run the agent on the same repo: `python -m agent.run_agent --repo-path workspace/django-dialogflow --repo-name django-dialogflow --out-dir /tmp/demo --variant full`.
-- While it runs, narrate the trajectory live from `agent_trajectory.jsonl`: it installs the pinned deps, gets `Django-1.11.5 ... requests-2.7.0`, then tries to run tests and hits `ImportError: cannot import name 'Iterator' from 'collections'` — a real Python-3.11-vs-Django-1.11 incompatibility this repo's own (dead) Travis config never would have caught on a modern runner.
-- Show the final `agent_report.json`: a `red_flag` with `source: "tool_output"`, `evidence: "ImportError: cannot import name 'Iterator'..."`, and `tool_call_id: "call_9zwEBzy..."` — then actually grep that exact call_id in `agent_trajectory.jsonl` on screen to prove the citation is real, not asserted.
+**Before recording:** start the web UI (`uvicorn webapp.app:app --reload --port 8000`), open
+`http://localhost:8000` in one window, and have `README.md` / `CHANGELOG.md` / `EDGE_CASES.md`
+ready in a second window/tab to switch to.
 
-## 3:00–4:00 — Final comparison
-- Open `results/summary.md` / the table in `README.md`. Walk it: Spearman rank correlation (0.71 baseline → 0.99 full agent), groundedness, abstain rate, and the standout number — **Layer 1 evidence traceability: 11% → 53% → 100%** across the three agent variants.
-- Call out that "100%" isn't the agent being perfect — it's the self-check pass demoting anything it can't verify, so what's left is guaranteed real. Contrast with baseline's 75% abstain rate: calibrated but largely silent on the questions that matter.
+---
 
-## 4:00–4:20 — Changelog walkthrough
-- Open `CHANGELOG.md`. One sentence per stage: baseline (floor, mostly abstains) → tools/no contract (capability, 11% traceable) → contract/no self-check (discipline, 53% traceable) → full (self-check backstop, 100% traceable, best Spearman).
-- Name the change that contributed most: **not** the prompt — it was Iteration 3's fix to the *checker itself* (fuzzy-match evidence against the whole trajectory instead of trusting the model's self-reported `tool_call_id`).
+## 0:00–0:40 — Problem
 
-## 4:20–5:00 — The experiment that failed first, then the hot take
-- Tell the real story: the first version of the self-check pass demoted **100% of tool-backed red flags across all 8 repos** on the very first run — not because the model was lying, but because it cited a made-up label like `"functions.run_command:pip_install"` instead of the real opaque `call_id` it had actually received.
-- Close on the hot take: don't verify a model's citations by checking if it followed your citation *format* — verify by independently searching for whether the underlying claim is *true*. The fix that worked wasn't a better prompt; it was refusing to trust the model's transcription and having the harness re-derive the real reference deterministically.
+- "I'm a freelance software engineer. Before I quote a price on a new client project, I have to
+  figure out if their codebase is healthy or a trap. Today that means either hours of manual
+  digging, or the shortcut everyone actually takes: paste some files into an LLM and ask if it
+  looks okay — which sounds thorough but hasn't actually verified anything."
+- Briefly show `README.md`'s "Who this is for" / "The bottleneck" section on screen while saying this.
+
+## 0:40–1:00 — Meet the demo target
+
+- Switch to `EDGE_CASES.md` in `invoice-lite-legacy` (a separate repo you built specifically to
+  showcase this): "So I built a small fake invoicing app with 15 real problems planted in it on
+  purpose — hardcoded secrets, a secret that only exists in git history, vulnerable dependencies,
+  a Python 2 file that won't even parse, a 54KB god-file, a misleading README, a dead CI config.
+  This is the answer key I'm testing both systems against."
+
+## 1:00–3:00 — One realistic execution, start to finish (the web UI)
+
+- Open `http://localhost:8000`. Paste `https://github.com/galaxyte/invoice-lite-legacy.git`,
+  click **Analyze**.
+- While the roadmap runs (Cloning → Baseline → Agent, dots going grey → pulsing teal → green),
+  narrate: "Baseline runs first — one LLM call, no tools. Then the agent actually clones this,
+  installs it, runs the real test suite, audits dependencies, scans for secrets, all inside a
+  disposable Docker container."
+- When Baseline finishes: point at its card — `build_status`/`test_status` showing `unknown`,
+  `vulnerability_summary: null`. "It correctly refuses to guess — but that means it's told the
+  freelancer nothing useful about the two things that actually matter."
+- When Agent finishes: point at its card — `build_status: passed`, `test_status: failed` with a
+  real pass rate, `vulnerability_summary` with a real count. Click into 2-3 red flags and show the
+  **`📍 file:line` badge** on each one — the private key at `certs/dev.key:1`, the hardcoded
+  password at `config.py:3`. "Every one of these points at an exact line, not a vibe."
+
+## 3:00–3:40 — Final comparison (the numbers)
+
+- Switch to `README.md`'s results table or `results/summary.md`. Walk it in one breath: "Across 8
+  real public repos, baseline correlates 0.71 with an expert risk ranking; the full agent hits
+  0.99. The number I actually care about is this one: Layer 1 evidence traceability — can you
+  trust what it cites — goes from 11% with tools-but-no-discipline, to 53% with a verification
+  contract, to 100% once there's a deterministic self-check backstop."
+
+## 3:40–4:15 — The changelog, and the bug that made it real
+
+- Open `CHANGELOG.md`, scroll to Iteration 3. "The honest story: the first version of my
+  self-check demoted *every single tool-backed red flag across all 8 repos* on its first run. Not
+  because the model was lying — because it cited a made-up label like
+  `functions.run_command:pip_install` instead of the real id it was actually given. The fix
+  wasn't a better prompt. It was refusing to trust the model's transcription at all, and having
+  the code search the real trajectory for the evidence instead."
+
+## 4:15–4:45 — What was tried and kept as a live comparison
+
+- "All three agent variants — no verification contract, contract without a self-check, and the
+  full version — are still in the repo, not thrown away, so this comparison is something a judge
+  can rerun, not just something I'm asserting." (Optionally flash `agent/run_agent.py`'s
+  `VARIANTS` dict for two seconds.)
+
+## 4:45–5:00 — Hot take, close
+
+- "Don't verify a model's citations by checking if it followed your format — verify by
+  independently searching for whether the claim is true. That's the one sentence this whole
+  project is built around." Cut.
+
+---
 
 ## Recording notes
-- Record a live terminal + editor session (no slides needed) — the whole point is showing real tool calls and real file contents, not narrating over static text.
-- Have `results/summary.md` and the `django-dialogflow` `agent_full` trajectory pre-generated before recording so the walkthrough doesn't wait on live API latency; it's fine to *show* one short live agent run (0:45–3:00) for authenticity as long as the rest is pre-computed.
+
+- Pre-warm the web UI once before recording (first request after starting uvicorn is a little
+  slower while Python imports settle) so the on-camera run feels snappy.
+- If the live agent run (1:00–3:00) is running long/flaky on the day, it's fine to have a second
+  browser tab with a completed run already loaded and switch to narrating over that instead —
+  just say so, don't fake it as live.
+- Keep zoom/font size large in both the browser and any code windows — assume judges watch at
+  less than full screen.
