@@ -161,6 +161,7 @@
   .rm-dot-wrap { display: flex; align-items: center; width: 100%; }
   .rm-line { flex: 1; height: 2px; background: var(--border); }
   .rm-line.filled { background: var(--good); }
+  .rm-line.end { visibility: hidden; } /* keeps the last dot aligned with the others, without a dangling line */
   .rm-dot {
     width: 14px; height: 14px; border-radius: 50%; flex: none; margin: 0 6px;
     background: var(--text-dim); box-shadow: 0 0 0 4px var(--surface-2);
@@ -313,7 +314,7 @@
         <div class="rm-detail">Waiting</div>
       </div>
       <div class="rm-step" data-stage="agent">
-        <div class="rm-dot-wrap" style="justify-content:center;"><div class="rm-dot"></div></div>
+        <div class="rm-dot-wrap"><div class="rm-dot"></div><div class="rm-line end"></div></div>
         <div class="rm-label">Agent</div>
         <div class="rm-detail">Waiting</div>
       </div>
