@@ -86,6 +86,17 @@ Don't verify a model's citations by checking if it followed your citation format
 
 Consequential actions (running an unfamiliar repo's own build/install/test tooling) are gated behind a single explicit `--enable-sandbox-execution`-style decision documented in `REPRODUCE.md` (not a per-command prompt, which would make an 8-repo eval run un-reproducible hands-off), executed inside a throwaway, resource-limited, non-root Docker container with no host credentials and no live bind-mount of the repo. If Docker isn't available, the agent automatically falls back to static-analysis-only tools rather than failing closed. See `agent/sandbox.py` for the full implementation.
 
+## Web UI (optional, for demos)
+
+A minimal local page wraps the same baseline/agent functions used by the CLI — paste a repo URL or local path, click Analyze, see both reports side by side. Not part of the scored eval; just makes trying it out easier than the CLI.
+
+```bash
+uvicorn webapp.app:app --reload --port 8000
+# open http://localhost:8000
+```
+
+Only plain `https://` git URLs or existing local paths are accepted (other git transports like `ext::`/`file://` are rejected to avoid command injection via a crafted "URL").
+
 ## Video
 
 `video/script.md` (shot list); link: *TODO*.

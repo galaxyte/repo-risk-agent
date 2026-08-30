@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Repo Risk Agent</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #2a2e37; --text: #e6e8ec; --muted: #9aa1ad;
+    --accent: #5b9dff; --good: #3ecf8e; --warn: #e6b400; --bad: #ff5c5c; --crit: #ff2d55;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 28px 32px 8px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  main { max-width: 1000px; margin: 0 auto; padding: 16px 32px 60px; }
+  .form-row { display: flex; gap: 8px; margin: 16px 0 24px; }
+  input[type=text] {
+    flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 14px;
+  }
+  button {
+    padding: 12px 22px; border-radius: 8px; border: none; background: var(--accent);
+    color: #06121f; font-weight: 600; cursor: pointer; font-size: 14px;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: -16px; margin-bottom: 20px; }
+  #status { margin: 12px 0; color: var(--muted); font-size: 14px; display: none; }
+  #status.active { display: block; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+    vertical-align: -2px; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+  @media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge.go { background: rgba(62,207,142,0.15); color: var(--good); }
+  .badge.go_with_conditions { background: rgba(230,180,0,0.15); color: var(--warn); }
+  .badge.no_go { background: rgba(255,92,92,0.15); color: var(--bad); }
+  .badge.unknown, .badge.not_attempted { background: rgba(154,161,173,0.15); color: var(--muted); }
+  .badge.passed { background: rgba(62,207,142,0.15); color: var(--good); }
+  .badge.failed { background: rgba(255,92,92,0.15); color: var(--bad); }
+  .metrics { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; }
+  .metrics span { color: var(--muted); }
+  .summary { font-size: 13px; color: var(--text); margin-bottom: 14px; line-height: 1.5; }
+  .flag { border-left: 3px solid var(--border); padding: 8px 0 8px 12px; margin-bottom: 8px; font-size: 13px; }
+  .flag.low { border-color: var(--muted); }
+  .flag.medium { border-color: var(--warn); }
+  .flag.high { border-color: var(--bad); }
+  .flag.critical { border-color: var(--crit); }
+  .flag .title { font-weight: 600; margin-bottom: 2px; }
+  .flag .evidence { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; white-space: pre-wrap; margin-top: 4px; }
+  .flag .src { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .empty { color: var(--muted); font-size: 13px; font-style: italic; }
+  .clarify { font-size: 13px; margin-bottom: 4px; color: var(--muted); }
+  #error { color: var(--bad); font-size: 14px; margin: 12px 0; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔍 Repo Risk Agent</h1>
+  <p>Freelance due-diligence: paste a repo URL or local path to compare the zero-tool baseline against the verification-grounded agent.</p>
+</header>
+<main>
+  <div class="form-row">
+    <input id="repoInput" type="text" placeholder="https://github.com/owner/name.git  or  /path/to/local/repo" />
+    <button id="analyzeBtn" onclick="analyze()">Analyze</button>
+  </div>
+  <div class="hint">Runs the baseline (~15s) then the full agent (~1-3 min, real sandboxed build/test/audit) — same as the CLI, just with a UI.</div>
+  <div id="status"><span class="spinner"></span><span id="statusText">Working...</span></div>
+  <div id="error"></div>
+  <div class="columns" id="results" style="display:none;">
+    <div class="card" id="baselineCard"></div>
+    <div class="card" id="agentCard"></div>
+  </div>
+</main>
+
+<script>
+function badge(cls, label) {
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function renderReport(report, meta, title) {
+  const r = report;
+  let html = `<h2>${title} ${badge(r.go_no_go, r.go_no_go)}</h2>`;
+  html += `<div class="metrics">
+    <span>Risk: <b style="color:var(--text)">${r.risk_score}/100</b></span>
+    <span>Effort ×${r.effort_multiplier}</span>
+    <span>Build: ${badge(r.build_status, r.build_status)}</span>
+    <span>Tests: ${badge(r.test_status, r.test_status)}</span>
+  </div>`;
+  html += `<div class="summary">${r.summary || ""}</div>`;
+
+  if (r.red_flags && r.red_flags.length) {
+    html += r.red_flags.map(f => `
+      <div class="flag ${f.severity}">
+        <div class="title">[${f.severity.toUpperCase()}] ${f.title}</div>
+        <div class="evidence">${(f.evidence || "").slice(0, 300)}</div>
+        <div class="src">source: ${f.source}${f.tool_call_id ? " · " + f.tool_call_id : ""}${f.file_ref ? " · " + f.file_ref : ""}</div>
+      </div>`).join("");
+  } else {
+    html += `<div class="empty">No red flags raised.</div>`;
+  }
+
+  if (r.clarifying_questions && r.clarifying_questions.length) {
+    html += `<div style="margin-top:12px;font-size:12px;color:var(--muted);font-weight:600;">Clarifying questions</div>`;
+    html += r.clarifying_questions.map(q => `<div class="clarify">• ${q}</div>`).join("");
+  }
+
+  html += `<div style="margin-top:14px;font-size:11px;color:var(--muted);">
+    ${meta.wall_clock_sec}s · ${meta.input_tokens || "?"} in / ${meta.output_tokens || "?"} out tokens
+  </div>`;
+  return html;
+}
+
+async function analyze() {
+  const repo = document.getElementById("repoInput").value.trim();
+  const btn = document.getElementById("analyzeBtn");
+  const status = document.getElementById("status");
+  const statusText = document.getElementById("statusText");
+  const errorBox = document.getElementById("error");
+  const results = document.getElementById("results");
+
+  if (!repo) return;
+
+  btn.disabled = true;
+  status.classList.add("active");
+  statusText.textContent = "Cloning & running baseline + agent — this can take 1-3 minutes...";
+  errorBox.style.display = "none";
+  results.style.display = "none";
+
+  try {
+    const resp = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || "Request failed");
+
+    document.getElementById("baselineCard").innerHTML = renderReport(data.baseline.report, data.baseline.meta, "Baseline");
+    document.getElementById("agentCard").innerHTML = renderReport(data.agent.report, data.agent.meta, "Agent (full)");
+    results.style.display = "grid";
+  } catch (e) {
+    errorBox.textContent = "Error: " + e.message;
+    errorBox.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    status.classList.remove("active");
+  }
+}
+
+document.getElementById("repoInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") analyze();
+});
+</script>
+</body>
+</html>
