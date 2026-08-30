@@ -173,9 +173,9 @@ class ToolExecutor:
             return {
                 "language": "python",
                 "ruff_exit_code": lint.exit_code,
-                "ruff_output": lint.stdout[-4000:],
+                "ruff_output": self._summarize_ruff(lint.stdout),
                 "radon_exit_code": complexity.exit_code,
-                "radon_output": complexity.stdout[-4000:],
+                "radon_output": self._summarize_radon(complexity.stdout),
             }
 
         if js_files:
@@ -191,6 +191,66 @@ class ToolExecutor:
 
         all_files = [p for p in self.repo_path.rglob("*") if p.is_file()]
         return self._heuristic_complexity(all_files, "unsupported_language_heuristic_fallback")
+
+    def _summarize_ruff(self, raw_stdout: str) -> dict:
+        # Naive tail-truncation can bury the most important entries (e.g. a
+        # syntax error in a small file) behind thousands of style nits in a
+        # large one. Parse instead, surface every syntax/error-severity finding
+        # in full, and sample the rest -- so nothing critical falls off the edge.
+        try:
+            violations = json.loads(raw_stdout or "[]")
+        except json.JSONDecodeError:
+            return {"parse_error": True, "raw_tail": raw_stdout[-4000:]}
+
+        # Note: ruff's JSON sets "severity": "error" on essentially every diagnostic
+        # regardless of category, so it can't distinguish a real parse failure from
+        # a style nit -- only "code" == "invalid-syntax" actually means that.
+        is_critical = lambda v: v.get("code") == "invalid-syntax"
+        critical = [v for v in violations if is_critical(v)]
+        other = [v for v in violations if not is_critical(v)]
+
+        def _compact(v: dict) -> dict:
+            return {"file": v.get("filename"), "line": v.get("location", {}).get("row"),
+                    "code": v.get("code"), "message": v.get("message")}
+
+        return {
+            "total_violations": len(violations),
+            "syntax_or_error_severity_count": len(critical),
+            "syntax_or_error_severity_findings": [_compact(v) for v in critical],
+            "other_findings_sample": [_compact(v) for v in other[:20]],
+            "other_findings_omitted": max(0, len(other) - 20),
+        }
+
+    def _summarize_radon(self, raw_stdout: str) -> dict:
+        try:
+            parsed = json.loads(raw_stdout or "{}")
+        except json.JSONDecodeError:
+            return {"parse_error": True, "raw_tail": raw_stdout[-4000:]}
+
+        functions = []
+        files_with_errors = []
+        for filename, entries in parsed.items():
+            if isinstance(entries, dict) and "error" in entries:
+                # radon couldn't parse this file at all (e.g. Python 2-only syntax) --
+                # that failure is itself a finding, not something to silently skip.
+                files_with_errors.append({"file": filename, "error": entries["error"]})
+                continue
+            for e in entries:
+                if e.get("type") in ("function", "method"):
+                    functions.append({"file": filename, "name": e.get("name"), "line": e.get("lineno"),
+                                       "complexity": e.get("complexity"), "rank": e.get("rank")})
+
+        functions.sort(key=lambda f: -(f.get("complexity") or 0))
+        rank_counts: dict[str, int] = {}
+        for f in functions:
+            rank_counts[f["rank"]] = rank_counts.get(f["rank"], 0) + 1
+
+        return {
+            "total_functions": len(functions),
+            "rank_counts": rank_counts,
+            "most_complex_functions": functions[:15],
+            "files_radon_could_not_parse": files_with_errors,
+        }
 
     def _heuristic_complexity(self, files: list[Path], label: str) -> dict:
         sizes = []
