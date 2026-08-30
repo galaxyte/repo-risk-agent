@@ -1,0 +1,51 @@
+{
+  "repo_name": "requests",
+  "risk_score": 15,
+  "effort_multiplier": 1.05,
+  "summary": "Mature, well-maintained Python HTTP client with clean structure, an Apache-2.0 license, extensive tests, and CI. Static analysis is clean (Ruff OK). Full test suite runs locally: 619 passed, 15 skipped, 1 xfailed. No critical/high/medium dependency CVEs detected in the audited environment; some low-severity advisories were reported. The main caution is that test TLS private keys live in-repo and are intentionally included in source distributions via MANIFEST.in. While these are test fixtures (not production secrets), some organizations have compliance policies against shipping private keys at all; if that applies, you\u2019ll want to exclude tests/certs from distributed artifacts. Requires Python >=3.10.",
+  "red_flags": [
+    {
+      "title": "Test private keys stored in-repo (test fixtures)",
+      "severity": "medium",
+      "evidence": "-----BEGIN PRIVATE KEY-----",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "tests/certs/valid/server/server.key"
+    },
+    {
+      "title": "Source distribution includes tests/certs (bundles private keys)",
+      "severity": "medium",
+      "evidence": "include README.md LICENSE NOTICE HISTORY.md requirements-dev.txt\nrecursive-include tests *.py\nrecursive-include tests/certs *",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "MANIFEST.in"
+    },
+    {
+      "title": "Requires Python >=3.10 (runtime compatibility consideration)",
+      "severity": "low",
+      "evidence": "requires-python = \">=3.10\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "pyproject.toml"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python versions and platforms (Linux/Mac/Windows) must be supported in your deployment environment? The project requires Python >=3.10.",
+    "Do you have security/compliance constraints about distributing any private keys in artifacts? If so, should we exclude tests/ and tests/certs from sdists/wheels?",
+    "Is the plan to vendor/pin dependency versions or follow upstream ranges (e.g., urllib3>=1.26,<3)? Any internal mirrors or proxy requirements for installs?",
+    "Do you need additional static typing or type-checking gates (pyright/mypy) in CI beyond what\u2019s configured?",
+    "Any performance, memory, or networking constraints (timeouts, proxies, TLS settings) we should bake into defaults?",
+    "What is the target CI/CD environment so we can mirror the matrix and ensure parity with your infra?"
+  ],
+  "go_no_go": "go",
+  "rationale": "The codebase is widely used, clean, and stable. Linting passes and the full test suite succeeds locally. Licensing and governance are standard. The only noteworthy concern is inclusion of test private keys in distributed source packages; these are non-sensitive fixtures but can conflict with strict compliance policies. Otherwise, technical and delivery risk is low.",
+  "build_status": "passed",
+  "test_status": "passed",
+  "test_pass_rate": 1.0,
+  "vulnerability_summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 14
+  }
+}

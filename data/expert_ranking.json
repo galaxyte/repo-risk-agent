@@ -1,0 +1,58 @@
+[
+  {
+    "name": "requests",
+    "expert_rank": 1,
+    "expert_risk_score": 5,
+    "expert_go_no_go": "go",
+    "notes": "Mature, widely-used, actively maintained (pushed within days), full CI, extensive real test suite, clean packaging. About as low-risk as a freelance intake gets."
+  },
+  {
+    "name": "click",
+    "expert_rank": 2,
+    "expert_risk_score": 8,
+    "expert_go_no_go": "go",
+    "notes": "Same profile as requests: active Pallets-project maintenance, CI, real tests, small clean codebase. Low risk."
+  },
+  {
+    "name": "path_mapper",
+    "expert_rank": 3,
+    "expert_risk_score": 50,
+    "expert_go_no_go": "go_with_conditions",
+    "notes": "Archived 2008-era micro-library. Small (120KB) and self-contained with a tests/ dir, so verifying it still works is cheap even though it's unmaintained -- worth a build/test attempt before quoting, not an automatic pass."
+  },
+  {
+    "name": "pyfsa",
+    "expert_rank": 4,
+    "expert_risk_score": 55,
+    "expert_go_no_go": "go_with_conditions",
+    "notes": "Archived 2008-era pure-Python package with setup.py and a tests/ dir, but generated-docs cruft (.happydoc.* files) suggests some staleness/build-tooling risk. Salvageable but needs verification, not a clean adoption."
+  },
+  {
+    "name": "lztestkit",
+    "expert_rank": 5,
+    "expert_risk_score": 60,
+    "expert_go_no_go": "go_with_conditions",
+    "notes": "Archived 2008 JS testing toolkit with a Rakefile driving a JS project -- an unusual, dated build setup that likely needs real investigation to get running on a modern toolchain."
+  },
+  {
+    "name": "django-dialogflow",
+    "expert_rank": 6,
+    "expert_risk_score": 65,
+    "expert_go_no_go": "no_go",
+    "notes": "Has a .travis.yml claiming CI + coveralls coverage, which LOOKS like a tested, healthy project -- but it targets Python 2.7/3.4/3.5 and Travis CI itself is defunct for new builds. This is the 'green badge, silently dead' trap case: the appearance of verification without real, current verification. Expect it to fail to install/run cleanly on a modern Python."
+  },
+  {
+    "name": "django-basic-social",
+    "expert_rank": 7,
+    "expert_risk_score": 78,
+    "expert_go_no_go": "no_go",
+    "notes": "Archived 2008 Django app: no requirements.txt/setup.py at all (dependency risk unverifiable by design), a vendored BeautifulSoup.py committed directly into the repo root, and .gitmodules (likely-broken submodules). Worst structural hygiene of the abandoned set."
+  },
+  {
+    "name": "NodeGoat",
+    "expert_rank": 8,
+    "expert_risk_score": 90,
+    "expert_go_no_go": "no_go",
+    "notes": "OWASP's deliberately-vulnerable teaching app -- real, documented, intentional vulnerabilities (SQLi, XSS, insecure deps) by design. From a 'would a freelancer want to inherit this for a client' lens this is the highest-risk repo in the set: it requires full security remediation, not incremental work."
+  }
+]

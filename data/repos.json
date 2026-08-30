@@ -1,0 +1,50 @@
+[
+  {
+    "name": "requests",
+    "clone_url": "https://github.com/psf/requests.git",
+    "language": "python",
+    "category": "well_maintained"
+  },
+  {
+    "name": "click",
+    "clone_url": "https://github.com/pallets/click.git",
+    "language": "python",
+    "category": "well_maintained"
+  },
+  {
+    "name": "path_mapper",
+    "clone_url": "https://github.com/codahale/path_mapper.git",
+    "language": "python",
+    "category": "abandoned"
+  },
+  {
+    "name": "pyfsa",
+    "clone_url": "https://github.com/osteele/pyfsa.git",
+    "language": "python",
+    "category": "abandoned"
+  },
+  {
+    "name": "lztestkit",
+    "clone_url": "https://github.com/osteele/lztestkit.git",
+    "language": "javascript",
+    "category": "abandoned"
+  },
+  {
+    "name": "django-dialogflow",
+    "clone_url": "https://github.com/vkosuri/django-dialogflow.git",
+    "language": "python",
+    "category": "borderline"
+  },
+  {
+    "name": "django-basic-social",
+    "clone_url": "https://github.com/myles-archive/django-basic-social.git",
+    "language": "python",
+    "category": "abandoned"
+  },
+  {
+    "name": "NodeGoat",
+    "clone_url": "https://github.com/OWASP/NodeGoat.git",
+    "language": "javascript",
+    "category": "deliberately_vulnerable"
+  }
+]

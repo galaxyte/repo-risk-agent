@@ -1,0 +1,68 @@
+{
+  "repo_name": "lztestkit",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "build_test_log": [],
+  "dependency_audit": {
+    "ecosystem": "unsupported_or_undetected",
+    "note": "No package-lock.json, requirements.txt, pyproject.toml, or setup.py found at repo root; dependency audit not attempted. Treat dependency risk as unverified."
+  },
+  "lint": {
+    "language": "javascript_no_eslint_config",
+    "note": "No project-specific linter run; reporting line-count heuristic only.",
+    "largest_files_by_line_count": [
+      [
+        "src/lzmock.js",
+        405
+      ],
+      [
+        "src/autorun-browser.js",
+        170
+      ],
+      [
+        "src/lzspec.js",
+        124
+      ],
+      [
+        "src/jsspec.js",
+        108
+      ],
+      [
+        "src/fluently.js",
+        100
+      ],
+      [
+        "src/lzunit-extensions.js",
+        94
+      ],
+      [
+        "src/lztimer-browser.js",
+        81
+      ],
+      [
+        "src/autorun-lz.js",
+        60
+      ],
+      [
+        "lib/jquery-1.2.1.min.js",
+        31
+      ],
+      [
+        "lib/swfobject.js",
+        8
+      ]
+    ]
+  },
+  "secrets_found": false,
+  "secrets_raw": {
+    "working_tree_findings": [],
+    "git_history_findings": []
+  },
+  "signals": {
+    "has_ci_config": false,
+    "has_license": false,
+    "has_tests_dir": true,
+    "readme_word_count": 859,
+    "large_files_over_50kb": []
+  }
+}

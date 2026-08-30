@@ -1,0 +1,8 @@
+{
+  "repo_name": "requests",
+  "model": "gpt-5",
+  "wall_clock_sec": 53.8,
+  "input_tokens": 38700,
+  "output_tokens": 3504,
+  "file_dump_chars": 160037
+}

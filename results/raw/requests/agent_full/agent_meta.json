@@ -1,0 +1,11 @@
+{
+  "repo_name": "requests",
+  "model": "gpt-5",
+  "variant": "full",
+  "turns_used": 10,
+  "wall_clock_sec": 216.3,
+  "input_tokens": 115211,
+  "output_tokens": 7145,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

@@ -1,0 +1,31 @@
+{
+  "repo_name": "django-basic-social",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "build_test_log": [],
+  "dependency_audit": {
+    "ecosystem": "unsupported_or_undetected",
+    "note": "No package-lock.json, requirements.txt, pyproject.toml, or setup.py found at repo root; dependency audit not attempted. Treat dependency risk as unverified."
+  },
+  "lint": {
+    "language": "python",
+    "ruff_exit_code": 1,
+    "ruff_output": "},\n    \"message\": \"Expected `,`, found newline\",\n    \"name\": \"invalid-syntax\",\n    \"noqa_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"invalid-syntax\",\n    \"end_location\": {\n      \"column\": 23,\n      \"row\": 1735\n    },\n    \"filename\": \"/workspace/BeautifulSoup.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 1,\n      \"row\": 1735\n    },\n    \"message\": \"Expected `,`, found indent\",\n    \"name\": \"invalid-syntax\",\n    \"noqa_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"invalid-syntax\",\n    \"end_location\": {\n      \"column\": 1,\n      \"row\": 1917\n    },\n    \"filename\": \"/workspace/BeautifulSoup.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 1,\n      \"row\": 1917\n    },\n    \"message\": \"Expected a statement\",\n    \"name\": \"invalid-syntax\",\n    \"noqa_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"invalid-syntax\",\n    \"end_location\": {\n      \"column\": 15,\n      \"row\": 1920\n    },\n    \"filename\": \"/workspace/BeautifulSoup.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 11,\n      \"row\": 1920\n    },\n    \"message\": \"Simple statements must be separated by newlines or semicolons\",\n    \"name\": \"invalid-syntax\",\n    \"noqa_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"I001\",\n    \"end_location\": {\n      \"column\": 51,\n      \"row\": 2\n    },\n    \"filename\": \"/workspace/manage.py\",\n    \"fix\": {\n      \"applicability\": \"safe\",\n      \"edits\": [\n        {\n          \"content\": \"from django.core.management import execute_manager\\n\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 3\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 2\n          }\n        }\n      ],\n      \"message\": \"Organize imports\"\n    },\n    \"location\": {\n      \"column\": 1,\n      \"row\": 2\n    },\n    \"message\": \"Import block is un-sorted or un-formatted\",\n    \"name\": \"unsorted-imports\",\n    \"noqa_row\": 2,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/unsorted-imports\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"I001\",\n    \"end_location\": {\n      \"column\": 20,\n      \"row\": 4\n    },\n    \"filename\": \"/workspace/manage.py\",\n    \"fix\": {\n      \"applicability\": \"safe\",\n      \"edits\": [\n        {\n          \"content\": \"    import settings  # Assumed to be in the same directory.\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 5\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 4\n          }\n        }\n      ],\n      \"message\": \"Organize imports\"\n    },\n    \"location\": {\n      \"column\": 5,\n      \"row\": 4\n    },\n    \"message\": \"Import block is un-sorted or un-formatted\",\n    \"name\": \"unsorted-imports\",\n    \"noqa_row\": 4,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/unsorted-imports\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"UP031\",\n    \"end_location\": {\n      \"column\": 299,\n      \"row\": 7\n    },\n    \"filename\": \"/workspace/manage.py\",\n    \"fix\": {\n      \"applicability\": \"unsafe\",\n      \"edits\": [\n        {\n          \"content\": \"\\\"Error: Can't find the file 'settings.py' in the directory containing {!r}. It appears you've customized things.\\\\nYou'll have to run django-admin.py, passing it your settings module.\\\\n(If the file settings.py does indeed exist, it's causing an ImportError somehow.)\\\\n\\\".format(__file__)\",\n          \"end_location\": {\n            \"column\": 299,\n            \"row\": 7\n          },\n          \"location\": {\n            \"column\": 22,\n            \"row\": 7\n          }\n        }\n      ],\n      \"message\": \"Replace with format specifiers\"\n    },\n    \"location\": {\n      \"column\": 22,\n      \"row\": 7\n    },\n    \"message\": \"Use format specifiers instead of percent format\",\n    \"name\": \"printf-string-formatting\",\n    \"noqa_row\": 7,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/printf-string-formatting\"\n  }\n]",
+    "radon_exit_code": 0,
+    "radon_output": "{\"BeautifulSoup.py\": {\"error\": \"invalid syntax (<unknown>, line 402)\"}}\n"
+  },
+  "secrets_found": false,
+  "secrets_raw": {
+    "working_tree_findings": [],
+    "git_history_findings": []
+  },
+  "signals": {
+    "has_ci_config": false,
+    "has_license": false,
+    "has_tests_dir": false,
+    "readme_word_count": 37,
+    "large_files_over_50kb": [
+      "BeautifulSoup.py"
+    ]
+  }
+}

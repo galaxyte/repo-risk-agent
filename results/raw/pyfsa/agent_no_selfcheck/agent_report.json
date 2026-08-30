@@ -1,0 +1,67 @@
+{
+  "repo_name": "pyfsa",
+  "risk_score": 78,
+  "effort_multiplier": 2.5,
+  "summary": "Pyfsa is an older, Python\u20112\u2013era codebase. It installs via setup.py, but the core modules contain Python\u20112 syntax that fails under Python 3, and the bundled tests require running the file directly rather than discovery and then crash on import due to syntax errors in FSA.py. There is no CI, no dependency/lock metadata, and no modern packaging or test runner configuration. Security scan of the current environment shows only low\u2011severity issues, but that audit isn\u2019t project\u2011specific. Expect significant modernization work (2\u21923 port, test harness, CI) before any feature work.",
+  "red_flags": [
+    {
+      "title": "Python 3 import fails due to Python\u20112 lambda tuple parameters",
+      "severity": "critical",
+      "evidence": "transitions = map(lambda (s0,s1,l),m=stateMap:(m[s0], m[s1], l), self.transitions)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py:466"
+    },
+    {
+      "title": "Multiple modules use Python\u20112\u2011only syntax (print statements, apply, tuple\u2011unpacking lambdas)",
+      "severity": "high",
+      "evidence": "localTransitions = filter(lambda (s0,s1,l), set=stateSet:l and s0 in set, self.transitions)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py:??"
+    },
+    {
+      "title": "Unit tests are not discoverable by default unittest discovery",
+      "severity": "medium",
+      "evidence": "Default unittest discovery runs 0 tests because tests are in tests/tests.py (name does not match default pattern test*.py).",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "tests/tests.py:1"
+    },
+    {
+      "title": "No CI configuration detected",
+      "severity": "low",
+      "evidence": "signals.has_ci_config: false",
+      "source": "tool_output",
+      "tool_call_id": "functions.list_tree#1",
+      "file_ref": null
+    },
+    {
+      "title": "Dependency audit not project\u2011specific (no requirements/lockfile)",
+      "severity": "low",
+      "evidence": "No requirements.txt; audited whatever is currently installed in the sandbox. Run an install step first for this to be meaningful.",
+      "source": "tool_output",
+      "tool_call_id": "functions.dependency_audit#1",
+      "file_ref": null
+    }
+  ],
+  "clarifying_questions": [
+    "What Python versions must this library support in production? (If Python 3.x only, a systematic 2\u21923 port is required.)",
+    "What is the project\u2019s target packaging standard (setuptools/pyproject.toml) and distribution channels (PyPI, internal)?",
+    "Do you expect to keep the public API stable during the port, or is breaking change acceptable?",
+    "Are there additional private tests or sample datasets not checked into this repo?",
+    "What CI provider/do you prefer (GitHub Actions, GitLab CI, etc.) and supported OS/Python matrix?",
+    "What are the functional requirements you want validated by tests beyond the current minimal suite?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The codebase is small and conceptually straightforward but predates Python 3. While it installs, the core modules won\u2019t even import under Python 3 due to multiple Python\u20112 constructs. A thorough modernization pass (futurize/lib2to3 or manual refactor), test fixing/expansion, and CI setup are prerequisites before any feature work. Risk is elevated primarily by the porting effort and lack of verified tests/CI, not by external dependencies or secrets.",
+  "build_status": "passed",
+  "test_status": "failed",
+  "test_pass_rate": 0.0,
+  "vulnerability_summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 14
+  }
+}

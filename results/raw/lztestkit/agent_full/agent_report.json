@@ -1,0 +1,55 @@
+{
+  "repo_name": "lztestkit",
+  "risk_score": 75,
+  "effort_multiplier": 2,
+  "summary": "Vintage OpenLaszlo test kit (circa 2007) intended to be dropped into an OpenLaszlo webapp and exercised via a browser/JSP page. The codebase depends on legacy technologies (OpenLaszlo, jQuery 1.2.1, SWFObject/Flash-era workflow), has no modern package/dependency manifest, and tests are browser-driven rather than runnable in a typical CI. No secrets detected. License is MIT. Because the required runtime is obsolete and not provisioned here, installation/build/test could not be verified in this environment. Expect significant effort to stand up a compatible environment and to de-risk legacy dependencies.",
+  "red_flags": [
+    {
+      "title": "Depends on legacy OpenLaszlo versions (3.4.0 or 4.0.6)",
+      "severity": "high",
+      "evidence": "This package requires OpenLaszlo 3.4.0 or 4.0.6.  (Other versions\nmight work, but aren't tested.)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README:33-34"
+    },
+    {
+      "title": "Tests are executed via browser/JSP, not an automatable test runner",
+      "severity": "medium",
+      "evidence": "Visit e.g. http://127.0.0.1:8080/openlaszlo-4.0.6/lztestkit/examples\nand http://127.0.0.1:8080/openlaszlo-4.0.6/lztestkit/test.  (The\nfirst part of the path will be different if you've got a different\nversion of OpenLaszlo, or if you've installed the servlet instead of\nthe server).  You should be able to click on the examples and tests\nin order to run them.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README:43-48"
+    },
+    {
+      "title": "Includes very old jQuery (1.2.1 from 2007)",
+      "severity": "high",
+      "evidence": "/*\n * jQuery 1.2.1 - New Wave Javascript\n *\n * Copyright (c) 2007 John Resig (jquery.com)\n * Dual licensed under the MIT (MIT-LICENSE.txt)\n * and GPL (GPL-LICENSE.txt) licenses.\n *\n * $Date: 2007-09-16 23:42:06 -0400 (Sun, 16 Sep 2007) $\n * $Rev: 3353 $\n */",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/jquery-1.2.1.min.js:1-9"
+    },
+    {
+      "title": "Relies on SWFObject (Flash-era embedding)",
+      "severity": "medium",
+      "evidence": "/**\n * SWFObject v1.5: Flash Player detection and embed - http://blog.deconcept.com/swfobject/\n *\n * SWFObject is (c) 2007 Geoff Stearns and is released under the MIT License:\n * http://www.opensource.org/licenses/mit-license.php",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/swfobject.js:1-5"
+    }
+  ],
+  "clarifying_questions": [
+    "What environment do you expect this to run in today (OpenLaszlo version, servlet vs. standalone server, Flash vs. DHTML output)?",
+    "Do you already have a working OpenLaszlo server/webapp where we can drop this directory and verify behavior?",
+    "Which browsers/platforms must be supported? If Flash output is required, is that acceptable for your users?",
+    "Is the scope to maintain this as-is, or to modernize/migrate away from OpenLaszlo and the 2007-era JS libraries (jQuery 1.2.1, SWFObject)?",
+    "Do you need a CI pipeline added to run any tests (e.g., headless browser) or is manual/browser-based testing acceptable?",
+    "Are there any additional internal dependencies or customizations not included in this repo (e.g., server config, build scripts)?",
+    "Should the Rake-based packaging/docs workflow be maintained, or replaced with a more modern documentation/build approach?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The codebase targets an obsolete framework and browser stack, making environment setup and ongoing maintenance risky. Automated verification is not readily possible without standing up an OpenLaszlo server and possibly Flash-era support. Security posture is unclear due to lack of a modern dependency manifest and use of very old third-party libraries. With a clear scope, access to a working environment, and alignment on acceptable legacy constraints (or budget for modernization), it is feasible but entails above-average risk and effort.",
+  "build_status": "not_attempted",
+  "test_status": "not_attempted",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

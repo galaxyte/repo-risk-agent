@@ -1,0 +1,65 @@
+{
+  "repo_name": "path_mapper",
+  "risk_score": 62,
+  "effort_multiplier": 1.8,
+  "summary": "Small Python library with tests, but the codebase targets Python 2 semantics and currently fails to run under the provided Python 3 environment. Unit tests cannot execute due to import semantics and Python-2-only raise syntax. No dependency/packaging metadata is present, so dependency risk is unverified. No CI and no LICENSE detected. Taking this project on likely requires a Python 3 port, packaging setup, and basic CI.",
+  "red_flags": [
+    {
+      "title": "Tests failed under Python 3 due to import error (Python 2-style relative import)",
+      "severity": "high",
+      "evidence": "ModuleNotFoundError: No module named 'containers'",
+      "source": "tool_output",
+      "tool_call_id": "call_wi4JYJy3H89NY90O04K7zik4",
+      "file_ref": null
+    },
+    {
+      "title": "Repository lacks a LICENSE file",
+      "severity": "medium",
+      "evidence": "\"has_license\": false",
+      "source": "tool_output",
+      "tool_call_id": "call_jaoT76MbdWfm87X5oPb84HPN",
+      "file_ref": null
+    },
+    {
+      "title": "No CI configuration detected",
+      "severity": "low",
+      "evidence": "\"has_ci_config\": false",
+      "source": "tool_output",
+      "tool_call_id": "call_jaoT76MbdWfm87X5oPb84HPN",
+      "file_ref": null
+    },
+    {
+      "title": "Python 2-only raise statements present",
+      "severity": "high",
+      "evidence": "raise NotImplementedError, 'Route is an abstract class.'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/routes/abstract_route.py:33"
+    },
+    {
+      "title": "Python 2-only raise statements present (multiple)",
+      "severity": "high",
+      "evidence": "raise KeyError, key",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/containers/prefix_tree.py:53"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python version(s) must this project support in production? Is Python 3.x required?",
+    "If Python 3 is required, is a full port of the library and tests in scope (modernize imports, exceptions, and any regex/type checks)?",
+    "Do you want this packaged for distribution (e.g., add pyproject.toml / setup.cfg) and tested via CI? If so, which CI provider do you prefer?",
+    "Is there an intended software license for this repository (MIT/Apache-2.0/etc.)?",
+    "Are there any external dependencies you plan to add, or should this remain a zero-dependency library?",
+    "Beyond static routes, should support for component and regex routes be implemented now, or is it intentionally out of scope?",
+    "(self-check demoted -- evidence unverifiable) Tests failed to run: python not available in PATH",
+    "(self-check demoted -- evidence unverifiable) Python 3 syntax errors detected in core library files",
+    "(self-check demoted -- evidence unverifiable) Dependency audit could not be performed (no lockfile or manifest)"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Core functionality appears small and well-scoped, but the code targets Python 2 and fails to execute in a Python 3 environment. Porting to Python 3, restoring test execution, and setting up packaging/CI are prerequisites for reliable delivery. These are manageable tasks but introduce risk and uncertainty until requirements (target Python version, scope) are clarified. No dependency metadata and no CI also mean more upfront setup work.",
+  "build_status": "failed",
+  "test_status": "failed",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

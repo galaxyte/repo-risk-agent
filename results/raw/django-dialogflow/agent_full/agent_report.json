@@ -1,0 +1,80 @@
+{
+  "repo_name": "django-dialogflow",
+  "risk_score": 82,
+  "effort_multiplier": 2.0,
+  "summary": "This repo is a small Django app/project wired to Dialogflow, but it is anchored to very old dependencies and contains hardcoded secrets. We could install dependencies only by overriding the sandbox\u2019s protections, and tests fail immediately under the default modern Python due to the project\u2019s dependency on Django 1.11. The library dialogflow-lite drags in very old requests and has packaging issues. A dependency audit could not be verified. Expect significant modernization and security cleanup work before this is production-ready.",
+  "red_flags": [
+    {
+      "title": "Hardcoded Django SECRET_KEY committed to source",
+      "severity": "critical",
+      "evidence": "SECRET_KEY = '=!3#_p1azz)e)%thknqv--kfseq4!wh94@8&08l#fz1ovxjh1&'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/settings.py:20"
+    },
+    {
+      "title": "Hardcoded Dialogflow client access token in settings.py",
+      "severity": "critical",
+      "evidence": "'client_access_token': 'e5dc21cab6df451c866bf5efacb40178',",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/settings.py:30"
+    },
+    {
+      "title": "Pinned to Django 1.11.5 (end-of-life and incompatible with modern Python)",
+      "severity": "high",
+      "evidence": "Django>=1.11.5,<1.11.6",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt:1"
+    },
+    {
+      "title": "Tests fail to run on Python 3.11 due to Django 1.11 incompatibility",
+      "severity": "high",
+      "evidence": "ImportError: cannot import name 'Iterator' from 'collections' (/usr/lib/python3.11/collections/__init__.py)",
+      "source": "tool_output",
+      "tool_call_id": "call_9zwEBzy14ZeFW0rEMCCGYwpY",
+      "file_ref": null
+    },
+    {
+      "title": "Unpinned dependencies in requirements.txt reduce reproducibility",
+      "severity": "medium",
+      "evidence": "mock\\ndjango-cors-headers",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt:3-4"
+    },
+    {
+      "title": "Very old requests (2.7.0) installed via transitive dependency; conflicts with modern tooling and likely vulnerable",
+      "severity": "high",
+      "evidence": "Successfully installed Django-1.11.5 SpeechRecognition-3.7.1 dialogflow-lite-0.0.6 django-cors-headers-3.2.1 mock-5.2.0 pytz-2026.3.post1 requests-2.7.0",
+      "source": "tool_output",
+      "tool_call_id": "call_X93QxLFqmIw223wjPsyo8dz5",
+      "file_ref": null
+    },
+    {
+      "title": "CI targets only Python 2.7/3.4/3.5; no modern Python support",
+      "severity": "medium",
+      "evidence": "python:\\n  - '2.7'\\n  - '3.4'\\n  - '3.5'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".travis.yml:4-6"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python and Django versions must this project support in production? Are you open to upgrading to a currently supported Django (e.g., 4.2 LTS or 5.x) and adjusting the code accordingly?",
+    "Are the committed SECRET_KEY and Dialogflow client_access_token real and in use anywhere? If so, can you rotate them and allow us to move secrets into environment variables or a secrets manager?",
+    "Can we replace or remove the dialogflow-lite dependency in favor of an officially supported Dialogflow client library and modern HTTP stack (and update tests accordingly)?",
+    "Is maintaining compatibility with legacy Python (2.7/3.5) required, or can we drop it and modernize CI to a current Python (3.10\u20133.12)?",
+    "What is the expected deployment environment (OS, Python version, containerization) so we can reproduce it locally and in CI?",
+    "Do you need us to add proper automated tests and a modern CI pipeline (GitHub Actions, etc.) since the current tests cannot run under modern Python?",
+    "Are there any constraints preventing us from pinning and/or upgrading third-party dependencies to secure versions?",
+    "(self-check demoted -- evidence unverifiable) Dependency audit failed to run (package metadata generation error)"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Key risks are objective and verified: hardcoded secrets are present in source; the dependency set is obsolete (Django 1.11) and fails under the default Python 3.11; dialogflow-lite has packaging quirks and pins/induces an ancient requests (2.7.0). The dependency audit tool could not complete. Fixing these will require upgrading Django and related code, removing secrets from source and rotating them, revising dependency pins, and updating CI/test infrastructure. The codebase itself is small and not highly complex, but modernization and security remediation work is non-trivial.",
+  "build_status": "passed",
+  "test_status": "failed",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

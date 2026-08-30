@@ -1,0 +1,11 @@
+{
+  "repo_name": "pyfsa",
+  "model": "gpt-5",
+  "variant": "full",
+  "turns_used": 8,
+  "wall_clock_sec": 83.3,
+  "input_tokens": 70444,
+  "output_tokens": 6914,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

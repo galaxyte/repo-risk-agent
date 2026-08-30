@@ -1,0 +1,8 @@
+{
+  "repo_name": "lztestkit",
+  "model": "gpt-5",
+  "wall_clock_sec": 35.6,
+  "input_tokens": 28396,
+  "output_tokens": 4291,
+  "file_dump_chars": 107500
+}

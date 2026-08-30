@@ -1,0 +1,88 @@
+{
+  "repo_name": "django-dialogflow",
+  "risk_score": 78,
+  "effort_multiplier": 2.0,
+  "summary": "Legacy Django app skeleton for a Dialogflow web client with very old, pinned server/client dependencies and signs of repo age/maintenance gaps. Expect significant upgrade, security hardening, and integration work before safe production use.",
+  "red_flags": [
+    {
+      "title": "Pinned to end-of-life Django 1.11.5",
+      "severity": "critical",
+      "evidence": "Django>=1.11.5,<1.11.6",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt"
+    },
+    {
+      "title": "Very old jQuery checked into repo (2013, v2.0.3)",
+      "severity": "high",
+      "evidence": "/*!\\n * jQuery JavaScript Library v2.0.3",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/static/js/jquery.js"
+    },
+    {
+      "title": "Hard-coded Dialogflow client access token in docs (bad practice for secrets)",
+      "severity": "high",
+      "evidence": "'client_access_token': 'e5dc21cab6df451c866bf5efacb40178',",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README.md"
+    },
+    {
+      "title": "Outdated/likely unmaintained Dialogflow client library pinned narrowly",
+      "severity": "medium",
+      "evidence": "dialogflow-lite>=0.0.6,<0.0.7",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt"
+    },
+    {
+      "title": "Unpinned dependencies (non-reproducible installs)",
+      "severity": "medium",
+      "evidence": "mock\\ndjango-cors-headers",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt"
+    },
+    {
+      "title": "Travis CI badge points to travis-ci.org (service shut down / migration required)",
+      "severity": "medium",
+      "evidence": "[![Build Status](https://travis-ci.org/vkosuri/django-dialogflow.svg?branch=master)](https://travis-ci.org/vkosuri/django-dialogflow)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README.md"
+    },
+    {
+      "title": "Outdated deployment docs (Heroku cedar) indicate project age",
+      "severity": "low",
+      "evidence": "Creating intense-falls-9163... done, stack is cedar",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README.md"
+    },
+    {
+      "title": "Documentation quality issues (typo/broken links)",
+      "severity": "low",
+      "evidence": "See detailed example ... [app.html](.django_dialogflow/django_dialogflow/templates/app.html)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README.md"
+    }
+  ],
+  "clarifying_questions": [
+    ": What Python/Django versions must this project support in production? Is upgrading to a supported Django (4.x/5.x) acceptable?",
+    "Do you expect to keep using dialogflow-lite, or can we migrate to Google\u2019s current Dialogflow (CX/ES) SDK and API versions?",
+    "Is there a test suite and CI configuration elsewhere in the repo or organization? If yes, please share paths or CI URLs.",
+    "Are there any security/compliance requirements (e.g., no client secrets in code, SSO, CSP) we must meet?",
+    "Do you have existing production data or users that must be migrated?",
+    "What browsers must be supported? Can we replace/remove the vendored jQuery 2.0.3 and modernize the frontend?",
+    "Is the goal to patch a bug on the legacy stack or to modernize the codebase? Scope drives risk and pricing.",
+    "Are there deployment targets besides Heroku, and do you have current infrastructure IaC or runbooks?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "High technical/security debt from legacy dependencies and vendored frontend, plus likely API drift with Dialogflow. Project is feasible if the engagement includes time for upgrading Django, replacing outdated JS, securing secrets, and re-establishing CI/tests. Otherwise, changes on the legacy stack carry excessive risk.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

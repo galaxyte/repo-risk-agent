@@ -1,0 +1,8 @@
+{
+  "repo_name": "path_mapper",
+  "model": "gpt-5",
+  "wall_clock_sec": 60.7,
+  "input_tokens": 5323,
+  "output_tokens": 4267,
+  "file_dump_chars": 18461
+}

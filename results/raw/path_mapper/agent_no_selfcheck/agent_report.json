@@ -1,0 +1,62 @@
+{
+  "repo_name": "path_mapper",
+  "risk_score": 75,
+  "effort_multiplier": 2.8,
+  "summary": "Small Python library for mapping paths to options. The codebase appears to target Python 2 (implicit relative imports and Python 2-style raise statements). In a modern Python 3 environment, tests fail to collect and multiple modules contain syntax incompatible with Python 3. There is no packaging metadata (no setup.py/pyproject), no dependency manifest, and no CI. Secrets scan found nothing. If you need Python 3 compatibility and a maintainable packaging/testing setup, expect significant porting work before feature development can begin.",
+  "red_flags": [
+    {
+      "title": "Python 2-only exception syntax (incompatible with Python 3)",
+      "severity": "critical",
+      "evidence": "raise KeyError, key",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/containers/prefix_tree.py:53"
+    },
+    {
+      "title": "Python 2-only exception syntax (incompatible with Python 3)",
+      "severity": "critical",
+      "evidence": "raise NotImplementedError, 'Route is an abstract class.'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/routes/abstract_route.py:33"
+    },
+    {
+      "title": "Python 2-only exception syntax (incompatible with Python 3)",
+      "severity": "high",
+      "evidence": "raise NotImplementedError, 'regular expression routes not implemented yet'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/routes/__init__.py:20"
+    },
+    {
+      "title": "Implicit relative imports (Python 2-style) within package",
+      "severity": "high",
+      "evidence": "from containers import RouteDict",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/__init__.py:4"
+    },
+    {
+      "title": "Tests assume legacy package import style, likely to fail under pytest/Python 3",
+      "severity": "medium",
+      "evidence": "import test_prefix_tree, test_route_dict, test_route_list, test_route_tree",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "tests/test_containers/__init__.py:5"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python version(s) must this project support? Is Python 3 required, or is Python 2 acceptable for your target environment?",
+    "Do you want me to port the codebase to Python 3 (fix syntax, update imports, adjust tests) as part of the engagement?",
+    "How should this library be packaged and distributed (e.g., create pyproject.toml / setup.cfg, publish to PyPI, internal registry)?",
+    "Are there any required test frameworks or CI providers you expect (e.g., pytest + GitHub Actions)?",
+    "Are there any external dependencies you expect to use that aren\u2019t currently listed (there\u2019s no requirements/manifest)?",
+    "What is the intended license for this codebase? There is no LICENSE file in the repo."
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Core code and tests are not compatible with Python 3 as-is, which will block execution in most modern environments. Lack of packaging and CI adds setup overhead. While the codebase is small and conceptually straightforward, the mandatory modernization work (port to Python 3, fix imports, adjust tests, add packaging/CI) introduces schedule and risk. Proceed if you can allocate time/budget for modernization first.",
+  "build_status": "not_attempted",
+  "test_status": "failed",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

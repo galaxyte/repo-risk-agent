@@ -1,0 +1,664 @@
+
+
+===== README.markdown =====
+PathMapper
+==========
+
+A path-to-options mapper with a difference.
+
+Why You Should Use It
+---------------------
+
+1. Totally backend-agnostic. You don't need controllers, HTTP headers, or
+   anything. Only the desire to map paths to options and back again.
+
+2. Performance. PathMapper has been written from the ground up to be as fast as
+   possible. Path mapping should be invisible and easy, regardless of how many
+   routes you may have.
+
+3. Awesomeness. Yeah. Pretty good.
+
+How It Works
+------------
+
+### Static Paths
+
+The best-case scenario is that you want to map a simple string -- say '/home' --
+to a set of options:
+
+    mapper.connect('/home', { 'controller': 'home', 'action': 'index' })
+
+PathMapper places these static paths in a hash table, which has a roughly `O(1)`
+access time. Regardless of how many static paths you specify, the complexity
+remains the same. This is blazing fast.
+
+### Component Paths
+
+A bit slower than static paths are component paths:
+
+    mapper.connect('/:controller/:action/:id')
+
+These are compiled into a prefix tree (or "trie"), which has a `O(m)` access
+time, where `m` is the number of path elements. So looking up `/posts/show/1`
+requires two comparisons. This is fast, but we're not done yet. The prefix tree
+is used to narrow the number of possible routes down to those which could
+potentially match. (In practice, this tends to be `:id` vs `:id.:format`
+comparisons.) This matching algorithm is `O(n)`, but the n is usually no more
+than two or three.
+
+### Regular Expressions
+
+The last check which is done is against regular expression paths:
+
+    mapper.connect(re.compile('/[a-z]{4,6}/DINGO'), { 'controller': 'funkenstein', 'action': 'dingo_hater' })
+
+There's no good way of organizing these, so it's a `O(n)` comparison. Not a bad
+tradeoff for much more powerful pattern matching.
+
+===== tests/test_containers/test_prefix_tree.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+from helpers import test
+
+from path_mapper.containers import PrefixTree
+
+class PrefixTreeTests(unittest.TestCase):
+  
+  def setUp(self):
+    self.tree = PrefixTree()
+  
+  @test
+  def should_get_set_values(self):
+    self.tree['blah'] = 300
+    self.assertEqual(300, self.tree['blah'])
+  
+  @test
+  def should_return_None_for_missing_values(self):
+    self.assertEqual(None, self.tree.get('blah'))
+  
+  @test
+  def should_return_default_for_missing_values(self):
+    self.assertEqual([], self.tree.get('blah', []))
+  
+  @test
+  def should_get_set_values_with_wildcards(self):
+    self.tree['bla?ee'] = 400
+    self.assertEqual(400, self.tree['blaoee'])
+    self.assertEqual(400, self.tree['blalee'])
+  
+  @test
+  def should_work_with_lists(self):
+    self.tree[1, 2, 3, '?'] = 300
+    self.assertEqual(300, self.tree[1, 2, 3, 4])
+  
+  @test
+  def should_have_membership_test(self):
+    self.tree['blah'] = 400
+    self.assertTrue('blah' in self.tree)
+    self.assertFalse('bla' in self.tree)
+  
+  @test
+  def should_raise_error_on_missing_key(self):
+    self.assertRaises(KeyError, self.tree.__getitem__, 'blah')
+  
+  @test
+  def should_not_match_on_wildcard_none(self):
+    mytree = PrefixTree(wildcard=None)
+    mytree['bl?h'] = 40
+    self.assertFalse('blah' in mytree)
+  
+  @test
+  def should_raise_error_on_setting_None(self):
+    self.assertRaises(ValueError, self.tree.__setitem__, 'yay', None)
+  
+  @test
+  def should_set_default(self):
+    self.assertEqual([], self.tree.setdefault('dingo', []))
+    self.tree.setdefault('dingo', []).append(1)
+    self.tree.setdefault('dingo', []).append(2)
+    self.assertEqual([1, 2], self.tree['dingo'])
+  
+  @test
+  def should_raise_error_on_setting_None_as_default(self):
+    self.assertRaises(ValueError, self.tree.setdefault, 'yay', None)
+  
+  @test
+  def should_generally_do_what_i_want(self):
+    self.tree[('home',)] = '/home'
+    self.tree['home', '?'] = '/home/:action'
+    self.tree[('?',)] = '/:controller'
+    self.tree['?', '?'] = '/:controller/:action'
+    self.assertEqual('/:controller/:action', self.tree.get('dingo/majesty'.split('/')))
+    self.assertEqual('/home', self.tree.get('home'.split('/')))
+  
+
+def suite():
+  return unittest.TestSuite(
+    [
+      unittest.makeSuite(PrefixTreeTests)
+    ]
+  )
+
+
+
+===== lib/path_mapper/containers/prefix_tree.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+class PrefixTree(object):
+  """
+    A prefix tree (a.k.a. "trie") implementation which supports wildcard
+    matching.
+  """
+  
+  def __init__(self, wildcard='?'):
+    """
+      Creates a new instance of PrefixTree.
+      
+      Accepts wildcard as an optional parameter. If wildcard is None, no
+      wildcard matching will be performed.
+    """
+    super(PrefixTree, self).__init__()
+    self.root = [None, dict()]
+    if wildcard:
+      self.wildcard = hash(wildcard)
+    else:
+      self.wildcard = None
+  
+  def get(self, key, default=None):
+    """
+      Returns the value associated with the key, or default if none exists.
+      default defaults to None.
+      
+        >>> tree.get('known')
+        'yay'
+        >>> tree.get('unknown')
+        >>> tree.get('unknown', 0)
+        0
+    """
+    node = self.root
+    for element in key:
+      h = hash(element)
+      if h in node[1]:
+        node = node[1][h]
+      elif self.wildcard and (self.wildcard in node[1]):
+        node = node[1][self.wildcard]
+      else:
+        return default
+    return node[0]
+  
+  def __getitem__(self, key):
+    """
+      Returns the value associated with the key, or raises a KeyError if none
+      exists.
+    """
+    value = self.get(key, default=None)
+    if value == None:
+      raise KeyError, key
+    else:
+      return value
+  
+  def __setitem__(self, key, value):
+    """
+      Associates value with key. If value is None, raises a ValueError.
+    """
+    if value == None:
+      raise ValueError, 'None is not a valid value'
+    node = self.root
+    for element in key:
+      node = node[1].setdefault(hash(element), [None, {}])
+    node[0] = value
+  
+  def __contains__(self, key):
+    """
+      Returns True if key exists in the tree, False otherwise.
+    """
+    return self.get(key, default=None) != None
+  
+  def setdefault(self, key, default):
+    """
+      Returns the value associated with the key, or sets it to default and
+      returns default.
+    """
+    if default == None:
+      raise ValueError, 'None is not a valid default'
+    node = self.root
+    for element in key:
+      node = node[1].setdefault(hash(element), [None, {}])
+    if node[0] == None:
+      node[0] = default
+    return node[0]
+  
+
+
+===== benchmarks/helpers.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import sys, timeit
+
+sys.path.insert(0, 'benchmarks')
+sys.path.insert(0, 'lib')
+
+all_benchmarks = set()
+tsv = 'tsv' in sys.argv
+
+def benchmark(number=10000):
+  """
+    A decorator which adds the decorated function to the benchmark list.
+  """
+  def benchmark_decorator(f):
+    all_benchmarks.add((f.__name__, number))
+    return f
+  return benchmark_decorator
+
+def print_benchmarks(results):
+  name_length = None
+  for module, benchmarks in results.iteritems():
+    name_length = max([len(name) for (name, time) in benchmarks] + [name_length])
+  for module, benchmarks in sorted(results.iteritems(), key=lambda (x, y): x):
+    if tsv:
+      for benchmark, time in benchmarks:
+        print '%s\t%f' % (benchmark, time)
+    else:
+      print (module + ' ').ljust(80, '_')
+      for benchmark, time in sorted(benchmarks, key=lambda (x, y): x):
+        time = ('%0.2f' % time).rjust(10)
+        print '- %s %s usec/pass' % (benchmark.ljust(name_length), time)
+      print
+
+def run_benchmarks():
+  """
+    Runs all registered benchmarks.
+  """
+  results = list()
+  for name, number in all_benchmarks:
+    t = timeit.Timer('%s()' % name, 'from __main__ import %s' % name)
+    results.append((name, 1000000*t.timeit(number=number)/number))
+  print_benchmarks({sys.argv[0]: results})
+
+
+===== lib/path_mapper/routes/abstract_route.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+class AbstractRoute(object):
+  """
+    An abstract class wrapping the basics of path matching. Routes do two
+    things:
+    
+      1. Register themselves with various containers as being able to match
+         paths which match particular broad patterns (e.g., '/posts/?').
+      
+      2. Determine whether or not a path matches exactly, and if it does,
+         parses it into a set of options.
+  """
+  
+  def __init__(self, path, name=None, options=None):
+    super(AbstractRoute, self).__init__()
+    self.static = False
+    self.path = path
+    self.name = name
+    if options:
+      self.options = options
+    else:
+      self.options = dict()
+  
+  def __repr__(self):
+    return '<Route path=%s, name=%s, options=%s>' % (repr(self.path), repr(self.name), repr(self.options))
+  
+  def match(self, path):
+    """
+      Returns True if path matches the route. Returns False, otherwise.
+    """
+    raise NotImplementedError, 'Route is an abstract class.'
+  
+  def paths(self):
+    """
+      Returns a set of paths which this route should respond to.
+    """
+    raise NotImplementedError, 'Route is an abstract class.'
+  
+
+
+===== tests/test_containers/test_route_dict.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest, warnings
+from helpers import test
+
+from path_mapper.containers import RouteDict
+from path_mapper.routes import StaticRoute
+
+class RouteDictTests(unittest.TestCase):
+  
+  def setUp(self):
+    self.route1 = StaticRoute('/home')
+    self.route2 = StaticRoute('/home/about', name='Primero')
+    self.dict = RouteDict()
+    self.dict.add(self.route1)
+    self.dict.add(self.route2)
+  
+  @test
+  def should_match_routes(self):
+    self.assertEqual(self.route1, self.dict.match('/home'))
+  
+  @test
+  def should_warn_and_drop_on_path_collision(self):
+    self.warnings = list()
+    def warn(msg):
+      self.warnings.append(msg)
+    try:
+      old_warn = warnings.warn
+      warnings.warn = warn
+      self.dict.add(StaticRoute('/home', options={ 'blah': True }))
+      self.assertEqual(["Route collision: <Route path='/home', name=None, options={'blah': True}> was dropped for '/home'"], self.warnings)
+      self.assertEqual(self.route1, self.dict.match('/home'))
+    finally:
+      warnings.warn = old_warn
+  
+
+def suite():
+  return unittest.TestSuite(
+    [
+      unittest.makeSuite(RouteDictTests)
+    ]
+  )
+
+
+
+===== tests/helpers.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import sys, unittest
+sys.path.insert(0, 'lib')
+
+def fixedGetTestCaseNames(self, testCaseClass):
+  """Return a sorted sequence of method names found within testCaseClass
+  """
+  def isTestMethod(attrname, testCaseClass=testCaseClass, prefix=self.testMethodPrefix):
+    attr = getattr(testCaseClass, attrname)
+    if attrname.startswith(prefix) and callable(attr):
+      return True
+    return hasattr(attr, "_unittest_test")
+  testFnNames = filter(isTestMethod, dir(testCaseClass))
+  for baseclass in testCaseClass.__bases__:
+      for testFnName in self.getTestCaseNames(baseclass):
+          if testFnName not in testFnNames:  # handle overridden methods
+              testFnNames.append(testFnName)
+  if self.sortTestMethodsUsing:
+      testFnNames.sort(self.sortTestMethodsUsing)
+  return testFnNames
+unittest.TestLoader.getTestCaseNames = fixedGetTestCaseNames
+
+def test(f):
+  f._unittest_test = True
+  return f
+
+===== tests/test_routes/test_static_route.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+from helpers import test
+
+from path_mapper.routes import StaticRoute
+
+class StaticRouteTests(unittest.TestCase):
+  
+  def setUp(self):
+    self.route = StaticRoute('/home', name='home', options={ 'controller': 'pages', 'action': 'index' })
+  
+  @test
+  def should_have_a_name(self):
+    self.assertEqual('home', self.route.name)
+  
+  @test
+  def should_have_options(self):
+    self.assertEqual({ 'controller': 'pages', 'action': 'index' }, self.route.options)
+  
+  @test
+  def should_match_paths(self):
+    self.assertTrue(self.route.match('/home'))
+    self.assertFalse(self.route.match('dingo/weeble'))
+    self.assertFalse(self.route.match('/blah'))
+  
+  @test
+  def should_have_paths(self):
+    self.assertEqual(('/home',), self.route.paths())
+  
+def suite():
+  return unittest.TestSuite(
+    [
+      unittest.makeSuite(StaticRouteTests)
+    ]
+  )
+
+===== lib/path_mapper/containers/route_tree.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+from path_mapper.routes import parse_path
+from prefix_tree        import PrefixTree
+from route_list         import RouteList
+
+class RouteTree(PrefixTree):
+  """
+    A prefix tree for routes. O(m) matching for paths with m components (e.g.,
+    for '/1/2/3', m = 3).
+  """
+  
+  def __init__(self, wildcard='?'):
+    super(ListTree, self).__init__(wildcard=wildcard)
+  
+  def add(self, route):
+    """
+      Adds route to the tree for each path in route.paths().
+    """
+    for path in route.paths():
+      self.setdefault(parse_path(path), RouteList()).add(route)
+  
+  def match(self, path):
+    """
+      Returns the first route matching path. Returns None if no matches were
+      found.
+    """
+    return self.get(parse_path(path), RouteList()).match(path)
+  
+
+
+===== lib/path_mapper/routes/__init__.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+from re             import _pattern_type as regular_expression
+
+from abstract_route import AbstractRoute
+from static_route   import StaticRoute
+
+def parse_path(path):
+  """
+    Converts a path string into a tuple of path components.
+  """
+  return tuple([component for component in path.split('/') if len(component) > 0])
+
+def make_route(path, name=None, options=None):
+  """
+    Given a path and an optional name and options, returns a route object.
+  """
+  if isinstance(path, regular_expression):
+    raise NotImplementedError, 'regular expression routes not implemented yet'
+  elif ':' in path:
+    raise NotImplementedError, 'component routes not implemented yet'
+  else:
+    return StaticRoute(path, name=name, options=options)
+  
+
+
+===== tests/test_path_mapper.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+from helpers import test
+
+from path_mapper import PathMapper
+from path_mapper.errors import NotFoundError
+
+class PathMapperTests(unittest.TestCase):
+  def setUp(self):
+    self.path_mapper = PathMapper()
+    self.path_mapper.connect('/home', options={ 'controller': 'home', 'action': 'weebles' })
+  
+  @test
+  def should_parse_a_static_url(self):
+    self.assertEqual({ 'controller': 'home', 'action': 'weebles' }, self.path_mapper.parse('/home'))
+  
+  @test
+  def should_raise_an_exception_if_parsing_an_unknown_static(self):
+    self.assertRaises(NotFoundError, self.path_mapper.parse, '/dingo')
+  
+def suite():
+  return unittest.makeSuite(PathMapperTests)
+
+if __name__ == '__main__':
+  unittest.main()
+
+===== tests/test_path_mapper.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+from helpers import test
+
+from path_mapper import PathMapper
+from path_mapper.errors import NotFoundError
+
+class PathMapperTests(unittest.TestCase):
+  def setUp(self):
+    self.path_mapper = PathMapper()
+    self.path_mapper.connect('/home', options={ 'controller': 'home', 'action': 'weebles' })
+  
+  @test
+  def should_parse_a_static_url(self):
+    self.assertEqual({ 'controller': 'home', 'action': 'weebles' }, self.path_mapper.parse('/home'))
+  
+  @test
+  def should_raise_an_exception_if_parsing_an_unknown_static(self):
+    self.assertRaises(NotFoundError, self.path_mapper.parse, '/dingo')
+  
+def suite():
+  return unittest.makeSuite(PathMapperTests)
+
+if __name__ == '__main__':
+  unittest.main()
+
+===== tests/alltests.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+
+import test_path_mapper, test_containers, test_routes
+
+
+def suite():
+  return unittest.TestSuite((
+    test_path_mapper.suite(),
+    test_containers.suite(),
+    test_routes.suite()
+  ))
+
+if __name__ == '__main__':
+  unittest.main(defaultTest='suite')
+
+===== tests/test_routes/test_route_making.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import re, unittest
+from helpers import test
+
+from path_mapper.routes import make_route, StaticRoute
+
+class RouteMakingTests(unittest.TestCase):
+  
+  @test
+  def should_make_static_routes(self):
+    route = make_route('/home')
+    self.assertTrue(isinstance(route, StaticRoute))
+  
+  @test
+  def should_not_be_able_to_make_component_routes(self):
+    self.assertRaises(NotImplementedError, make_route, '/posts/:id')
+  
+  @test
+  def should_not_be_able_to_make_regex_routes(self):
+    self.assertRaises(NotImplementedError, make_route, re.compile(r'/posts/([\d]{4})/([\d]{2})/([\d]{2})'))
+
+  
+def suite():
+  return unittest.TestSuite(
+    [
+      unittest.makeSuite(RouteMakingTests)
+    ]
+  )
+
+
+===== tests/test_routes/test_path_parsing.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+from helpers import test
+
+from path_mapper.routes import parse_path
+
+class PathParsingTests(unittest.TestCase):
+  
+  @test
+  def should_turn_paths_into_tuples(self):
+    self.assertEqual(('home', 'index', 'weeble'), parse_path('/home/index/weeble'))
+    self.assertEqual(('home', 'index', 'weeble'), parse_path('/home/index/weeble/'))
+    self.assertEqual(('home', 'index', 'weeble'), parse_path('home/index/weeble'))
+    self.assertEqual(('home', 'index', 'weeble'), parse_path('home/index/weeble/'))
+
+  
+def suite():
+  return unittest.TestSuite(
+    [
+      unittest.makeSuite(PathParsingTests),
+    ]
+  )
+
+===== tests/test_routes/test_static_route.py =====
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+import unittest
+from helpers import test
+
+from path_mapper.routes import StaticRoute
+
+class StaticRouteTests(unittest.TestCase):
+  
+  def setUp(self):
+    self.route = StaticRoute('/home', name='home', options={ 'controller': 'pages', 'action': 'index' })
+  
+  @test
+  def should_have_a_name(self):
+    self.assertEqual('home', self.route.name)
+  
+  @test
+  def should_have_options(self):
+    self.assertEqual({ 'controller': 'pages', 'action': 'index' }, self.route.options)
+  
+  @test
+  def should_match_paths(self):
+    self.assertTrue(self.route.match('/home'))
+    self.assertFalse(self.route.match('dingo/weeble'))
+    self.assertFalse(self.route.match('/blah'))
+  
+  @test
+  def should_have_paths(self):
+    self.assertEqual(('/home',), self.route.paths())
+  
+def suite():
+  return unittest.TestSuite(
+    [
+      unittest.makeSuite(StaticRouteTests)
+    ]
+  )

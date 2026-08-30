@@ -1,0 +1,49 @@
+{
+  "repo_name": "pyfsa",
+  "risk_score": 70,
+  "effort_multiplier": 2.0,
+  "summary": "Legacy Python 2-era finite-state automata library with minimal packaging and docs. The codebase does not run on modern Python 3: unit tests crash immediately with SyntaxError in core module FSA.py, and static analysis flags multiple Python-2-only constructs across files. We could not verify an editable install in the sandbox due to an externally-managed environment, and pytest discovers no tests by default. No dependency manifest/lockfile is present; a dependency audit therefore only reflects the sandbox environment, not this project. No CI is configured. Overall, expect a Python 3 port, modernization of packaging (pyproject), and test/CI setup before feature work. Risk is mainly technical debt/modernization, not secrets or third-party vulns.",
+  "red_flags": [
+    {
+      "title": "pytest found no tests by default",
+      "severity": "low",
+      "evidence": "no tests ran in 0.00s",
+      "source": "tool_output",
+      "tool_call_id": "call_9aGD7Ugn1yDACYTBPXCtDFJV",
+      "file_ref": null
+    },
+    {
+      "title": "No CI configuration detected",
+      "severity": "low",
+      "evidence": "\"signals\": {\"has_ci_config\": false, \"has_license\": true, \"has_tests_dir\": true, \"readme_word_count\": 62, \"large_files_over_50kb\": [\"FSChartParser.html\"]}",
+      "source": "tool_output",
+      "tool_call_id": "call_9V2mcJuaQG0qbOpYFuy47dlU",
+      "file_ref": null
+    }
+  ],
+  "clarifying_questions": [
+    "What Python versions must be supported? Is a full port to Python 3.10+ acceptable (dropping Python 2 compatibility)?",
+    "What is the desired packaging standard (pyproject.toml/PEP 517) and distribution target (PyPI, internal)?",
+    "Are there additional tests or sample inputs not included here? Should we convert/expand tests to run under pytest?",
+    "What functional scope is expected beyond making the current library work (features, performance, APIs)?",
+    "Do you have CI/CD preferences (GitHub Actions, GitLab CI) and target platforms?",
+    "Any external runtime dependencies expected (e.g., NumPy optional dependency NumFSAUtils) and required versions?",
+    "Is backward compatibility with existing serialized data or downstream projects required?",
+    "Are there licensing or attribution constraints beyond the included LICENSE.txt?",
+    "(self-check demoted -- evidence unverifiable) Core code is not Python 3 compatible (SyntaxError in FSA.py)",
+    "(self-check demoted -- evidence unverifiable) Multiple files contain Python 2-only syntax (static analysis)",
+    "(self-check demoted -- evidence unverifiable) Editable install could not be verified in sandbox",
+    "(self-check demoted -- evidence unverifiable) Dependency audit ran against sandbox environment (no lockfile/requirements)"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The project appears self-contained with no third-party runtime deps, but it is an older Python 2 codebase. Bringing it to production readiness requires a non-trivial Python 3 port (tuple-unpacking lambdas, print statements, types module usage, apply/reduce/filter idioms), packaging modernization, and test/CI setup. These introduce schedule and budget risk, but are manageable with a defined scope. We could not verify installation in the sandbox due to PEP 668, but that is an environment constraint rather than a project flaw. No secrets were found and dependency risk is minimal (no declared deps). Proceed if the client accepts a modernization phase first.",
+  "build_status": "failed",
+  "test_status": "failed",
+  "test_pass_rate": null,
+  "vulnerability_summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 14
+  }
+}

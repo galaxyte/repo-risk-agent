@@ -1,0 +1,140 @@
+{
+  "repo_name": "NodeGoat",
+  "build_status": "passed",
+  "test_status": "passed",
+  "build_test_log": [
+    {
+      "step": "npm_install",
+      "argv": [
+        "npm",
+        "install",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "cwd": ".",
+      "exit_code": 0,
+      "stdout": "\nadded 962 packages in 2m\n",
+      "stderr": "npm WARN deprecated urix@0.1.0: Please see https://github.com/lydell/urix#deprecated\nnpm WARN deprecated uuid@3.3.2: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.\nnpm WARN deprecated to-iso-string@0.0.2: to-iso-string has been deprecated, use @segment/to-iso-string instead.\nnpm WARN deprecated swig@1.4.2: This package is no longer maintained\nnpm WARN deprecated source-map-url@0.4.0: See https://github.com/lydell/source-map-url#deprecated\nnpm WARN deprecated source-map-resolve@0.5.2: See https://github.com/lydell/source-map-resolve#deprecated\nnpm WARN deprecated sntp@1.0.9: This module moved to @hapi/sntp. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.\nnpm WARN deprecated set-value@2.0.0: Critical bug fixed in v3.0.1, please upgrade to the latest version.\nnpm WARN deprecated resolve-url@0.2.1: https://github.com/lydell/resolve-url#deprecated\nnpm WARN deprecated request@2.79.0: request has been deprecated, see https://github.com/request/request/issues/3142\nnpm WARN deprecated readdir-scoped-modules@1.0.2: This functionality has been moved to @npmcli/fs\nnpm WARN deprecated querystring@0.2.0: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.\nnpm WARN deprecated mkdirp@0.5.1: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)\nnpm WARN deprecated mixin-deep@1.3.1: Critical bug fixed in v2.0.1, please upgrade to the latest version.\nnpm WARN deprecated nodeunit@0.9.5: you are strongly encouraged to use other testing options\nnpm WARN deprecated jade@0.26.3: Jade has been renamed to pug, please install the latest version of pug instead of jade\nnpm WARN deprecated ini@1.3.5: Please update to ini >=1.3.6 to avoid a prototype pollution issue\nnpm WARN deprecated hoek@2.16.3: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).\nnpm WARN deprecated har-validator@2.0.6: this library is no longer supported\nnpm WARN deprecated hawk@3.1.3: This module moved to @hapi/hawk. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.\nnpm WARN deprecated cryptiles@2.0.5: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).\nnpm WARN deprecated chokidar@2.1.6: Chokidar 2 does not receive security updates since 2019. Upgrade to chokidar 3 with 15x fewer dependencies\nnpm WARN deprecated bcrypt-nodejs@0.0.3: bcrypt-nodejs is no longer actively maintained. Please use bcrypt or bcryptjs. See https://github.com/kelektiv/node.bcrypt.js/wiki/bcrypt-vs-brypt.js to learn more about these two options\nnpm WARN deprecated boom@2.10.1: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).\nnpm WARN deprecated sntp@0.2.4: This module moved to @hapi/sntp. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.\nnpm WARN deprecated request@2.36.0: request has been deprecated, see https://github.com/request/request/issues/3142\nnpm WARN deprecated node-uuid@1.4.8: Use uuid module instead\nnpm WARN deprecated cryptiles@0.2.2: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).\nnpm WARN deprecated bson@1.0.9: Fixed a critical issue with BSON serialization documented in CVE-2019-2391, see https://bit.ly/2KcpXdo for more details\nnpm WARN deprecated boom@0.4.2: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).\nnpm WARN deprecated hoek@0.9.1: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).\nnpm WARN deprecated hawk@1.0.0: This module moved to @hapi/hawk. Please make sure to switch over as this distribution is no longer supported and may contain bugs and critical security issues.\nnpm WARN deprecated set-value@0.4.3: Critical bug fixed in v3.0.1, please upgrade to the latest version.\nnpm WARN deprecated debug@3.2.6: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)\nnpm WARN deprecated debug@3.2.6: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)\nnpm WARN deprecated minimatch@0.3.0: Please update to minimatch 3.0.2 or higher to avoid a RegExp DoS issue\nnpm WARN deprecated mkdirp@0.3.0: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)\nnpm WARN deprecated request@2.67.0: request has been deprecated, see https://github.com/request/request/issues/3142\nnpm WARN deprecated node-uuid@1.4.8: Use uuid module instead\nnpm WARN deprecated path-is-absolute@2.0.0: This package is no longer relevant as Node.js 0.12 is unmaintained.\nnpm WARN deprecated chokidar@2.1.8: Chokidar 2 does not receive security updates since 2019. Upgrade to chokidar 3 with 15x fewer dependencies\nnpm WARN deprecated tough-cookie@2.2.2: ReDoS vulnerability parsing Set-Cookie https://nodesecurity.io/advisories/130\nnpm WARN deprecated har-validator@5.1.3: this library is no longer supported\nnpm WARN deprecated debug@3.2.6: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)\nnpm WARN deprecated request@2.88.0: request has been deprecated, see https://github.com/request/request/issues/3142\nnpm WARN deprecated debug@3.2.6: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)\n",
+      "timed_out": false,
+      "duration_sec": 131.44326383300358
+    },
+    {
+      "step": "npm_test",
+      "argv": [
+        "npm",
+        "test",
+        "--if-present"
+      ],
+      "cwd": ".",
+      "exit_code": 0,
+      "stdout": "\n> owasp-nodejs-goat@1.3.0 test\n> node node_modules/grunt-cli/bin/grunt test\n\n>> Local Npm module \"grunt-nodemon\" not found. Is it installed?\n\nRunning \"env:test\" (env) task\n\nRunning \"mochaTest:unit\" (mochaTest) task\nNo files to check...OK\n\nDone.\n",
+      "stderr": "",
+      "timed_out": false,
+      "duration_sec": 0.669916832994204
+    }
+  ],
+  "dependency_audit": {
+    "ecosystem": "npm",
+    "command": [
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "exit_code": 1,
+    "summary": {
+      "critical": 38,
+      "high": 66,
+      "medium": 32,
+      "low": 8
+    },
+    "raw_stdout": "\": \"https://github.com/advisories/GHSA-96hv-2xvq-fx4p\",\n          \"severity\": \"high\",\n          \"cwe\": [\n            \"CWE-400\",\n            \"CWE-770\",\n            \"CWE-1050\"\n          ],\n          \"cvss\": {\n            \"score\": 7.5,\n            \"vectorString\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"\n          },\n          \"range\": \">=1.1.0 <5.2.5\"\n        }\n      ],\n      \"effects\": [],\n      \"range\": \"1.1.0 - 5.2.4\",\n      \"nodes\": [\n        \"node_modules/ws\"\n      ],\n      \"fixAvailable\": true\n    },\n    \"xml2js\": {\n      \"name\": \"xml2js\",\n      \"severity\": \"moderate\",\n      \"isDirect\": false,\n      \"via\": [\n        {\n          \"source\": 1096693,\n          \"name\": \"xml2js\",\n          \"dependency\": \"xml2js\",\n          \"title\": \"xml2js is vulnerable to prototype pollution\",\n          \"url\": \"https://github.com/advisories/GHSA-776f-qx25-q3cc\",\n          \"severity\": \"moderate\",\n          \"cwe\": [\n            \"CWE-1321\"\n          ],\n          \"cvss\": {\n            \"score\": 5.3,\n            \"vectorString\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N\"\n          },\n          \"range\": \"<0.5.0\"\n        }\n      ],\n      \"effects\": [],\n      \"range\": \"<0.5.0\",\n      \"nodes\": [\n        \"node_modules/xml2js\"\n      ],\n      \"fixAvailable\": true\n    },\n    \"y18n\": {\n      \"name\": \"y18n\",\n      \"severity\": \"high\",\n      \"isDirect\": false,\n      \"via\": [\n        {\n          \"source\": 1095087,\n          \"name\": \"y18n\",\n          \"dependency\": \"y18n\",\n          \"title\": \"Prototype Pollution in y18n\",\n          \"url\": \"https://github.com/advisories/GHSA-c4w7-xm78-47vh\",\n          \"severity\": \"high\",\n          \"cwe\": [\n            \"CWE-20\",\n            \"CWE-915\",\n            \"CWE-1321\"\n          ],\n          \"cvss\": {\n            \"score\": 7.3,\n            \"vectorString\": \"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L\"\n          },\n          \"range\": \"<3.2.2\"\n        }\n      ],\n      \"effects\": [],\n      \"range\": \"<3.2.2\",\n      \"nodes\": [\n        \"node_modules/nyc/node_modules/y18n\",\n        \"node_modules/y18n\"\n      ],\n      \"fixAvailable\": true\n    },\n    \"yargs\": {\n      \"name\": \"yargs\",\n      \"severity\": \"moderate\",\n      \"isDirect\": false,\n      \"via\": [\n        \"yargs-parser\"\n      ],\n      \"effects\": [\n        \"nyc\"\n      ],\n      \"range\": \"4.0.0-alpha1 - 7.0.0-alpha.3 || 7.1.1\",\n      \"nodes\": [\n        \"node_modules/nyc/node_modules/yargs\"\n      ],\n      \"fixAvailable\": true\n    },\n    \"yargs-parser\": {\n      \"name\": \"yargs-parser\",\n      \"severity\": \"moderate\",\n      \"isDirect\": false,\n      \"via\": [\n        {\n          \"source\": 1088783,\n          \"name\": \"yargs-parser\",\n          \"dependency\": \"yargs-parser\",\n          \"title\": \"yargs-parser Vulnerable to Prototype Pollution\",\n          \"url\": \"https://github.com/advisories/GHSA-p9pc-299p-vxgp\",\n          \"severity\": \"moderate\",\n          \"cwe\": [\n            \"CWE-915\",\n            \"CWE-1321\"\n          ],\n          \"cvss\": {\n            \"score\": 5.3,\n            \"vectorString\": \"CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L\"\n          },\n          \"range\": \"<=5.0.0\"\n        }\n      ],\n      \"effects\": [\n        \"nyc\",\n        \"yargs\"\n      ],\n      \"range\": \"<=5.0.0\",\n      \"nodes\": [\n        \"node_modules/nyc/node_modules/yargs-parser\"\n      ],\n      \"fixAvailable\": true\n    },\n    \"zaproxy\": {\n      \"name\": \"zaproxy\",\n      \"severity\": \"moderate\",\n      \"isDirect\": true,\n      \"via\": [\n        \"lodash\",\n        \"request\"\n      ],\n      \"effects\": [],\n      \"range\": \"<=1.0.1\",\n      \"nodes\": [\n        \"node_modules/zaproxy\"\n      ],\n      \"fixAvailable\": {\n        \"name\": \"zaproxy\",\n        \"version\": \"2.0.0-rc.7\",\n        \"isSemVerMajor\": true\n      }\n    }\n  },\n  \"metadata\": {\n    \"vulnerabilities\": {\n      \"info\": 0,\n      \"low\": 8,\n      \"moderate\": 32,\n      \"high\": 66,\n      \"critical\": 38,\n      \"total\": 144\n    },\n    \"dependencies\": {\n      \"prod\": 396,\n      \"dev\": 1016,\n      \"optional\": 116,\n      \"peer\": 0,\n      \"peerOptional\": 0,\n      \"total\": 1479\n    }\n  }\n}\n",
+    "raw_stderr": ""
+  },
+  "lint": {
+    "language": "javascript_no_eslint_config",
+    "note": "No project-specific linter run; reporting line-count heuristic only.",
+    "largest_files_by_line_count": [
+      [
+        "app/assets/vendor/bootstrap/bootstrap-tour.js",
+        694
+      ],
+      [
+        "test/security/profile-test.js",
+        290
+      ],
+      [
+        "app/routes/session.js",
+        277
+      ],
+      [
+        "Gruntfile.js",
+        194
+      ],
+      [
+        "server.js",
+        157
+      ],
+      [
+        "artifacts/db-reset.js",
+        135
+      ],
+      [
+        "app/data/user-dao.js",
+        123
+      ],
+      [
+        "app/assets/js/chart/chart-data-morris.js",
+        120
+      ],
+      [
+        "app/data/allocations-dao.js",
+        114
+      ],
+      [
+        "app/data/profile-dao.js",
+        113
+      ]
+    ]
+  },
+  "secrets_found": true,
+  "secrets_raw": {
+    "working_tree_findings": [
+      {
+        "pattern": "generic_api_key_assignment",
+        "file": "config/env/development.js",
+        "evidence": "ns -> API _Api Key.\n   zapApiKey: \"v9dn0balpqas1pcc281tn5ood1\",\n   // Required if "
+      },
+      {
+        "pattern": "generic_api_key_assignment",
+        "file": "config/env/test.js",
+        "evidence": "ns -> API _Api Key.\n   zapApiKey: \"v9dn0balpqas1pcc281tn5ood1\",\n   zapApiFeedbackS"
+      },
+      {
+        "pattern": "hardcoded_password_assignment",
+        "file": "test/security/profile-test.js",
+        "evidence": "UserName = \"user1\";\nvar sutUserPassword = \"User1_123\";\n\nchrome.setDefault"
+      },
+      {
+        "pattern": "hardcoded_password_assignment",
+        "file": "app/routes/session.js",
+        "evidence": "\"Invalid username\";\n            const invalidPasswordErrorMessage = \"Invalid password\";\n            if (er"
+      },
+      {
+        "pattern": "private_key_header",
+        "file": "artifacts/cert/server.key",
+        "evidence": "-----BEGIN RSA PRIVATE KEY-----\nMIICXgIBAAKBgQCfn8u"
+      }
+    ],
+    "git_history_findings": []
+  },
+  "signals": {
+    "has_ci_config": true,
+    "has_license": true,
+    "has_tests_dir": true,
+    "readme_word_count": 897,
+    "large_files_over_50kb": [
+      "app/assets/favicon.ico",
+      "package-lock.json"
+    ]
+  }
+}

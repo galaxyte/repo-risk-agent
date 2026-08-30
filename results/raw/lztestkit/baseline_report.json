@@ -1,0 +1,130 @@
+{
+  "repo_name": "lztestkit",
+  "risk_score": 90,
+  "effort_multiplier": 3.5,
+  "summary": "Legacy OpenLaszlo/Flash test toolkit (circa 2007\u20132008). The codebase targets SWF via SWFObject and relies on OpenLaszlo 3.4/4.0.6, technologies that are EOL and unsupported in modern browsers. It vendors very old client libraries (jQuery 1.2.1, SWFObject 1.5). Multiple correctness issues and potential injection risks are visible in the source. There is no visible modern build/CI workflow; tests are designed to run inside a browser/Flash applet. Taking this on without a clear plan (either to provision a period-correct environment or to fund a port away from Flash/OpenLaszlo) is high risk.",
+  "red_flags": [
+    {
+      "title": "Targets obsolete, EOL platform (OpenLaszlo/Flash)",
+      "severity": "critical",
+      "evidence": "This package requires OpenLaszlo 3.4.0 or 4.0.6.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README"
+    },
+    {
+      "title": "Explicit Flash dependency in browser runner",
+      "severity": "critical",
+      "evidence": "var so = new SWFObject(src, 'lzapp', '100%', '100%', '8', '#FFFFFF');",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/autorun-browser.js"
+    },
+    {
+      "title": "Vendored very old jQuery (2007)",
+      "severity": "high",
+      "evidence": "jQuery 1.2.1 - New Wave Javascript",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/jquery-1.2.1.min.js"
+    },
+    {
+      "title": "Vendored very old SWFObject (v1.5)",
+      "severity": "high",
+      "evidence": "SWFObject v1.5: Flash Player detection and embed",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/swfobject.js"
+    },
+    {
+      "title": "Potential code injection/XSS: incomplete escaping when sending log data to browser",
+      "severity": "high",
+      "evidence": "return '\"' + s.replace('\"', '\\\\\"').replace('\\n', '\\\\n') + '\"';",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/autorun-lz.js"
+    },
+    {
+      "title": "Spelling/logic bug: calls non-existent Mock.exectEvent",
+      "severity": "high",
+      "evidence": "Mock.exectEvent(sender, eventName);",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzspec.js"
+    },
+    {
+      "title": "Logic bug in argument comparison loop (uses function arguments length)",
+      "severity": "high",
+      "evidence": "for (var ix = 0; ix < arguments.length; ix++) {",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzmock.js"
+    },
+    {
+      "title": "Stub return value check likely inverted",
+      "severity": "medium",
+      "evidence": "return typeof returnValue ? undefined : returnValue[0];",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzmock.js"
+    },
+    {
+      "title": "Deletes likely wrong property during verify",
+      "severity": "medium",
+      "evidence": "delete this.mocks;",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzmock.js"
+    },
+    {
+      "title": "Use of eval when comparing XML attribute patterns",
+      "severity": "medium",
+      "evidence": "evalue = eval(evalue.substring(1, evalue.length-1));",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzmock.js"
+    },
+    {
+      "title": "Duplicate definition of Test.addProperty('mock')",
+      "severity": "low",
+      "evidence": "Test.addProperty('mock', function(object) {",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzmock.js"
+    },
+    {
+      "title": "Assertions rely on global canvas side effects",
+      "severity": "low",
+      "evidence": "canvas.setAttribute('runTests', canvas.runTests + 1)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "src/lzunit-extensions.js"
+    },
+    {
+      "title": "Browser/manual-run oriented tests; no headless/CI harness indicated",
+      "severity": "medium",
+      "evidence": "It allows you to run all of a package's test cases from the browser by visiting a single url",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README"
+    }
+  ],
+  "clarifying_questions": [
+    "What is the target runtime and browser support you need? Are you expecting this to run in modern browsers without Flash?",
+    "Do you have an existing, working OpenLaszlo (3.4.0/4.0.6) environment we can use, or is part of the engagement to provision/restore one?",
+    "Is the scope to maintain this as-is, or to port away from OpenLaszlo/Flash to a modern stack (e.g., pure JS/TypeScript, Web Components, or a test framework like Jest/Mocha/Playwright)?",
+    "Are you open to replacing or removing the vendored jQuery 1.2.1 and SWFObject 1.5 assets?",
+    "Is there any existing CI/CD or test automation not included in this dump? If so, what\u2019s the current build status?",
+    "Are the failing/buggy spots (e.g., Mock.exectEvent typo, Expect.arguments loop) known, and do you want them fixed even if they might change behavior?",
+    "Do you have licensing files for all vendored libraries (MIT noted in README, but is a LICENSE file present in the full repo)?",
+    "Are there additional source files (e.g., src/library.lzx, src/lztimer.lzx) and instructions to build LZX to SWF?",
+    "What security posture is required (this code executes JS via javascript: URLs and minimally escaped messages)? Is this intended for internal use only?",
+    "What level of backward compatibility with existing test suites is required if we refactor or modernize APIs?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Proceed only if the client explicitly accepts the legacy platform constraints or funds a modernization effort. The dependency on Flash/OpenLaszlo is a hard blocker for modern browser environments. Visible code issues and outdated third-party libraries add maintenance and security risk. With a clearly scoped plan (either environment restoration or a port), the work is feasible but high-effort/uncertain.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

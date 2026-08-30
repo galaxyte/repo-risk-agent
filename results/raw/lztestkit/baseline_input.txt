@@ -1,0 +1,1659 @@
+
+
+===== README =====
+= LZTestKit
+
+This package extends lzunit with behavioral testing, asynchronous
+test support, test case selection, and automated test sequencing.
+
+* <b>Test case selection</b> runs a single test case within a test
+  applet, without modifying the sources.  (You supply the name of the
+  test case as a query parameter in the application URL.)  It allows
+  you to use your test applet as your debugging scaffolding, without
+  running a lot of code that you aren't interested in.
+
+* <b>Automated test sequencing</b> runs all the test applets in a
+  directory, in series, in a single browser window, stopping if one of
+  them has an error.  It allows you to run all of a package's test
+  cases from the browser by visiting a single url, instead of
+  navigating to each url in turn.
+
+* <b>Behavioral testing</b> implements mocks, stubs, and expectations.
+  It allows you to *test* one class, while *stubbing* the classes that
+  it depends on.  You can even verify that the tested class makes
+  functions thatyou expect it to.  This is a loose port of rspec to
+  OpenLaszlo.
+
+* <b>Asynchronous test support</b> allows you to write a test case
+  that is only considered complete when the callback functions or
+  delegates that it defines return.  If a test case creates a callback
+  function, the test case is only complete when the callback function
+  returns.  (Except if the callback function creates a callback
+  function, etc.)
+
+== Requirements
+
+This package requires OpenLaszlo 3.4.0 or 4.0.6.  (Other versions
+might work, but aren't tested.)
+
+== Installation
+
+* Download the latest version from {download-location}.
+
+* Unpack it into your OpenLaszlo webapp directory; for example, at
+  <tt>${OPENLASZLO_HOME}/Server/lps-3.4.0/lztestkit</tt>.
+
+* Visit e.g. http://127.0.0.1:8080/openlaszlo-4.0.6/lztestkit/examples
+  and http://127.0.0.1:8080/openlaszlo-4.0.6/lztestkit/test.  (The
+  first part of the path will be different if you've got a different
+  version of OpenLaszlo, or if you've installed the servlet instead of
+  the server).  You should be able to click on the examples and tests
+  in order to run them.
+
+== Features
+
+=== Test case selection
+
+If a test application is compiled with support for test case selection, you
+can invoke it with a <tt>testCase=<em>{testCaseName}</em></tt> query parameter
+to run only the test case named <em>{testCaseName}</em>.
+
+Include <tt>lzunit-extensions.js</tt> in your application (or include
+<tt>library.lzx</tt>, which includes this).  Then, include the
+testCase={testCaseName} query parameter in the URL that you use to
+open the application, where {testCaseName} is the name of the test
+case.  Only this test case will execute.
+
+See the example in <tt>examples/test-selection.lzx</tt>.
+
+=== Automated test sequencing
+
+Copy <tt>test/autorun/index.jsp</tt> into your test directory to run
+all the test applications in that directory within a single browser
+window, without user interaction.
+
+Copy <tt>test/autorun/index.jsp</tt> into your test directory, and
+update the includes at the top of the file to reflect the paths to the
+lztestkit <tt>src</tt> and <tt>lib</tt> subdirectories.  By default,
+this file will run files in its directory that match /test-*.lzx/;
+this is a configuration parameter that it should be obvious how to
+change.
+
+Each test cases should include <tt>autorun-lz.js</tt> via <script
+src="autorun-lz.js"/>.  If you have a <tt>library.lzx</tt> file with
+test scaffolding, you can place that directive there.
+
+==== Support files
+<tt>autorun-lz.js</tt>:: implements the OpenLaszlo side of automated execution
+<tt>autorun-browser.js</tt>:: implements browser support
+<tt>autorun-include.jsp</tt>:: is a JSP include that embeds the files in the current directory into the generated HTML for the index page
+<tt>jquery-1.2.1.min.js</tt>:: is the jQuery library.  I didn't write this! but the browser support file needs it
+<tt>swfobject.js</tt>:: is the swfobject library.  I didn't write this! but the browser support file needs it
+
+
+=== Behavioral testing
+
+TODO
+
+This lets you write things like this in a test case:
+
+  myMockObject = Mock.Create(MyClass);
+  myMockObject.mock.expects.aMethod(1, 'arg', {name:2});
+  // call a fn that invokes myMockObject.aMethod(1, 'arg', {name:2})
+  myMockObject.mock.verify();
+
+  myMockObject.stub('aMethod', 'arg1', 'arg2', Function)
+    .by.calling(1);
+  // call a fn that invokes myMockObject.aMethod('arg1', 'arg2', function(n) {...})
+  // and expects the funarg to be called back with n=1
+
+  calling(anObject, 'methodName', 'arg1')
+    .should.call(otherObject, 'method', 'some', 'arguments')
+    .and.send(anObject, 'onchange', 'data')
+    .and.returnWith(1)
+
+  constructing('MyClass', 'initarg')
+    .should.call(otherObject, 'method', 'some', 'arguments')
+
+==== Implementation
+
+<tt>lzmock.js</tt>:: TODO
+<tt>lzspec.js</tt>:: TODO
+<tt>lzunit-extensions.js</tt>:: adds <tt>assertNotEquals</tt>, <tt>assert[Not]Contains</tt>, and <tt>assertFasterThan</tt> methods to <tt>TestCase</tt>
+<tt>jsspec.js</tt>::  js-level support for lzspec (without OpenLaszlo dependencies)
+<tt>hopkit.js</tt>:: support file for jsspec and lzmock
+
+=== Asynchronous test support
+
+TODO
+
+This features allows lzunit to run asynchronous tests, which are not
+complete until a delegate or callback has been called.  A typical
+usage pattern is the following test, which asserts that setTimeout
+delays at least the requested amount of time:
+
+  <method name="testSetTimeout" args="c">
+    var interval = 1000,
+        startTime = new Date;
+    // c(function(){...}) is equivalent to function(){...}
+    // except that it re-enters the dynamic bindings of the
+    // test case.
+    setTimeout(c(function() {
+      var endTime = new Date;
+      assertTrue(endTime - startTime >= interval);
+    }), interval);
+  </method>
+
+For now, see <tt>examples/test-lzunit-async.lzx</tt>.  The new methods are
+also copiously documented in <tt>src/lzunit-async.lzx</tt>.
+
+== Support Files
+
+The browser support for autorun relies on jQuery and swfobject.  I've
+included versions of these in the <tt>src</tt> directory.
+
+The behavioral testing files use hopkit.js to define chains.
+<tt>hopkit</tt> isn't otherwise ready for general release; and it's
+not necessary to use this file directly.
+
+== License
+
+LzTestKit is copyright (c) 2007 Oliver Steele.  It is open-source
+software, and may be redistributed under the terms of the MIT
+license. The text of this licence is included in the LzTestKit
+distribution.
+
+
+===== lib/jquery-1.2.1.min.js =====
+/*
+ * jQuery 1.2.1 - New Wave Javascript
+ *
+ * Copyright (c) 2007 John Resig (jquery.com)
+ * Dual licensed under the MIT (MIT-LICENSE.txt)
+ * and GPL (GPL-LICENSE.txt) licenses.
+ *
+ * $Date: 2007-09-16 23:42:06 -0400 (Sun, 16 Sep 2007) $
+ * $Rev: 3353 $
+ */
+(function(){if(typeof jQuery!="undefined")var _jQuery=jQuery;var jQuery=window.jQuery=function(selector,context){return this instanceof jQuery?this.init(selector,context):new jQuery(selector,context);};if(typeof $!="undefined")var _$=$;window.$=jQuery;var quickExpr=/^[^<]*(<(.|\s)+>)[^>]*$|^#(\w+)$/;jQuery.fn=jQuery.prototype={init:function(selector,context){selector=selector||document;if(typeof selector=="string"){var m=quickExpr.exec(selector);if(m&&(m[1]||!context)){if(m[1])selector=jQuery.clean([m[1]],context);else{var tmp=document.getElementById(m[3]);if(tmp)if(tmp.id!=m[3])return jQuery().find(selector);else{this[0]=tmp;this.length=1;return this;}else
+selector=[];}}else
+return new jQuery(context).find(selector);}else if(jQuery.isFunction(selector))return new jQuery(document)[jQuery.fn.ready?"ready":"load"](selector);return this.setArray(selector.constructor==Array&&selector||(selector.jquery||selector.length&&selector!=window&&!selector.nodeType&&selector[0]!=undefined&&selector[0].nodeType)&&jQuery.makeArray(selector)||[selector]);},jquery:"1.2.1",size:function(){return this.length;},length:0,get:function(num){return num==undefined?jQuery.makeArray(this):this[num];},pushStack:function(a){var ret=jQuery(a);ret.prevObject=this;return ret;},setArray:function(a){this.length=0;Array.prototype.push.apply(this,a);return this;},each:function(fn,args){return jQuery.each(this,fn,args);},index:function(obj){var pos=-1;this.each(function(i){if(this==obj)pos=i;});return pos;},attr:function(key,value,type){var obj=key;if(key.constructor==String)if(value==undefined)return this.length&&jQuery[type||"attr"](this[0],key)||undefined;else{obj={};obj[key]=value;}return this.each(function(index){for(var prop in obj)jQuery.attr(type?this.style:this,prop,jQuery.prop(this,obj[prop],type,index,prop));});},css:function(key,value){return this.attr(key,value,"curCSS");},text:function(e){if(typeof e!="object"&&e!=null)return this.empty().append(document.createTextNode(e));var t="";jQuery.each(e||this,function(){jQuery.each(this.childNodes,function(){if(this.nodeType!=8)t+=this.nodeType!=1?this.nodeValue:jQuery.fn.text([this]);});});return t;},wrapAll:function(html){if(this[0])jQuery(html,this[0].ownerDocument).clone().insertBefore(this[0]).map(function(){var elem=this;while(elem.firstChild)elem=elem.firstChild;return elem;}).append(this);return this;},wrapInner:function(html){return this.each(function(){jQuery(this).contents().wrapAll(html);});},wrap:function(html){return this.each(function(){jQuery(this).wrapAll(html);});},append:function(){return this.domManip(arguments,true,1,function(a){this.appendChild(a);});},prepend:function(){return this.domManip(arguments,true,-1,function(a){this.insertBefore(a,this.firstChild);});},before:function(){return this.domManip(arguments,false,1,function(a){this.parentNode.insertBefore(a,this);});},after:function(){return this.domManip(arguments,false,-1,function(a){this.parentNode.insertBefore(a,this.nextSibling);});},end:function(){return this.prevObject||jQuery([]);},find:function(t){var data=jQuery.map(this,function(a){return jQuery.find(t,a);});return this.pushStack(/[^+>] [^+>]/.test(t)||t.indexOf("..")>-1?jQuery.unique(data):data);},clone:function(events){var ret=this.map(function(){return this.outerHTML?jQuery(this.outerHTML)[0]:this.cloneNode(true);});var clone=ret.find("*").andSelf().each(function(){if(this[expando]!=undefined)this[expando]=null;});if(events===true)this.find("*").andSelf().each(function(i){var events=jQuery.data(this,"events");for(var type in events)for(var handler in events[type])jQuery.event.add(clone[i],type,events[type][handler],events[type][handler].data);});return ret;},filter:function(t){return this.pushStack(jQuery.isFunction(t)&&jQuery.grep(this,function(el,index){return t.apply(el,[index]);})||jQuery.multiFilter(t,this));},not:function(t){return this.pushStack(t.constructor==String&&jQuery.multiFilter(t,this,true)||jQuery.grep(this,function(a){return(t.constructor==Array||t.jquery)?jQuery.inArray(a,t)<0:a!=t;}));},add:function(t){return this.pushStack(jQuery.merge(this.get(),t.constructor==String?jQuery(t).get():t.length!=undefined&&(!t.nodeName||jQuery.nodeName(t,"form"))?t:[t]));},is:function(expr){return expr?jQuery.multiFilter(expr,this).length>0:false;},hasClass:function(expr){return this.is("."+expr);},val:function(val){if(val==undefined){if(this.length){var elem=this[0];if(jQuery.nodeName(elem,"select")){var index=elem.selectedIndex,a=[],options=elem.options,one=elem.type=="select-one";if(index<0)return null;for(var i=one?index:0,max=one?index+1:options.length;i<max;i++){var option=options[i];if(option.selected){var val=jQuery.browser.msie&&!option.attributes["value"].specified?option.text:option.value;if(one)return val;a.push(val);}}return a;}else
+return this[0].value.replace(/\r/g,"");}}else
+return this.each(function(){if(val.constructor==Array&&/radio|checkbox/.test(this.type))this.checked=(jQuery.inArray(this.value,val)>=0||jQuery.inArray(this.name,val)>=0);else if(jQuery.nodeName(this,"select")){var tmp=val.constructor==Array?val:[val];jQuery("option",this).each(function(){this.selected=(jQuery.inArray(this.value,tmp)>=0||jQuery.inArray(this.text,tmp)>=0);});if(!tmp.length)this.selectedIndex=-1;}else
+this.value=val;});},html:function(val){return val==undefined?(this.length?this[0].innerHTML:null):this.empty().append(val);},replaceWith:function(val){return this.after(val).remove();},eq:function(i){return this.slice(i,i+1);},slice:function(){return this.pushStack(Array.prototype.slice.apply(this,arguments));},map:function(fn){return this.pushStack(jQuery.map(this,function(elem,i){return fn.call(elem,i,elem);}));},andSelf:function(){return this.add(this.prevObject);},domManip:function(args,table,dir,fn){var clone=this.length>1,a;return this.each(function(){if(!a){a=jQuery.clean(args,this.ownerDocument);if(dir<0)a.reverse();}var obj=this;if(table&&jQuery.nodeName(this,"table")&&jQuery.nodeName(a[0],"tr"))obj=this.getElementsByTagName("tbody")[0]||this.appendChild(document.createElement("tbody"));jQuery.each(a,function(){var elem=clone?this.cloneNode(true):this;if(!evalScript(0,elem))fn.call(obj,elem);});});}};function evalScript(i,elem){var script=jQuery.nodeName(elem,"script");if(script){if(elem.src)jQuery.ajax({url:elem.src,async:false,dataType:"script"});else
+jQuery.globalEval(elem.text||elem.textContent||elem.innerHTML||"");if(elem.parentNode)elem.parentNode.removeChild(elem);}else if(elem.nodeType==1)jQuery("script",elem).each(evalScript);return script;}jQuery.extend=jQuery.fn.extend=function(){var target=arguments[0]||{},a=1,al=arguments.length,deep=false;if(target.constructor==Boolean){deep=target;target=arguments[1]||{};}if(al==1){target=this;a=0;}var prop;for(;a<al;a++)if((prop=arguments[a])!=null)for(var i in prop){if(target==prop[i])continue;if(deep&&typeof prop[i]=='object'&&target[i])jQuery.extend(target[i],prop[i]);else if(prop[i]!=undefined)target[i]=prop[i];}return target;};var expando="jQuery"+(new Date()).getTime(),uuid=0,win={};jQuery.extend({noConflict:function(deep){window.$=_$;if(deep)window.jQuery=_jQuery;return jQuery;},isFunction:function(fn){return!!fn&&typeof fn!="string"&&!fn.nodeName&&fn.constructor!=Array&&/function/i.test(fn+"");},isXMLDoc:function(elem){return elem.documentElement&&!elem.body||elem.tagName&&elem.ownerDocument&&!elem.ownerDocument.body;},globalEval:function(data){data=jQuery.trim(data);if(data){if(window.execScript)window.execScript(data);else if(jQuery.browser.safari)window.setTimeout(data,0);else
+eval.call(window,data);}},nodeName:function(elem,name){return elem.nodeName&&elem.nodeName.toUpperCase()==name.toUpperCase();},cache:{},data:function(elem,name,data){elem=elem==window?win:elem;var id=elem[expando];if(!id)id=elem[expando]=++uuid;if(name&&!jQuery.cache[id])jQuery.cache[id]={};if(data!=undefined)jQuery.cache[id][name]=data;return name?jQuery.cache[id][name]:id;},removeData:function(elem,name){elem=elem==window?win:elem;var id=elem[expando];if(name){if(jQuery.cache[id]){delete jQuery.cache[id][name];name="";for(name in jQuery.cache[id])break;if(!name)jQuery.removeData(elem);}}else{try{delete elem[expando];}catch(e){if(elem.removeAttribute)elem.removeAttribute(expando);}delete jQuery.cache[id];}},each:function(obj,fn,args){if(args){if(obj.length==undefined)for(var i in obj)fn.apply(obj[i],args);else
+for(var i=0,ol=obj.length;i<ol;i++)if(fn.apply(obj[i],args)===false)break;}else{if(obj.length==undefined)for(var i in obj)fn.call(obj[i],i,obj[i]);else
+for(var i=0,ol=obj.length,val=obj[0];i<ol&&fn.call(val,i,val)!==false;val=obj[++i]){}}return obj;},prop:function(elem,value,type,index,prop){if(jQuery.isFunction(value))value=value.call(elem,[index]);var exclude=/z-?index|font-?weight|opacity|zoom|line-?height/i;return value&&value.constructor==Number&&type=="curCSS"&&!exclude.test(prop)?value+"px":value;},className:{add:function(elem,c){jQuery.each((c||"").split(/\s+/),function(i,cur){if(!jQuery.className.has(elem.className,cur))elem.className+=(elem.className?" ":"")+cur;});},remove:function(elem,c){elem.className=c!=undefined?jQuery.grep(elem.className.split(/\s+/),function(cur){return!jQuery.className.has(c,cur);}).join(" "):"";},has:function(t,c){return jQuery.inArray(c,(t.className||t).toString().split(/\s+/))>-1;}},swap:function(e,o,f){for(var i in o){e.style["old"+i]=e.style[i];e.style[i]=o[i];}f.apply(e,[]);for(var i in o)e.style[i]=e.style["old"+i];},css:function(e,p){if(p=="height"||p=="width"){var old={},oHeight,oWidth,d=["Top","Bottom","Right","Left"];jQuery.each(d,function(){old["padding"+this]=0;old["border"+this+"Width"]=0;});jQuery.swap(e,old,function(){if(jQuery(e).is(':visible')){oHeight=e.offsetHeight;oWidth=e.offsetWidth;}else{e=jQuery(e.cloneNode(true)).find(":radio").removeAttr("checked").end().css({visibility:"hidden",position:"absolute",display:"block",right:"0",left:"0"}).appendTo(e.parentNode)[0];var parPos=jQuery.css(e.parentNode,"position")||"static";if(parPos=="static")e.parentNode.style.position="relative";oHeight=e.clientHeight;oWidth=e.clientWidth;if(parPos=="static")e.parentNode.style.position="static";e.parentNode.removeChild(e);}});return p=="height"?oHeight:oWidth;}return jQuery.curCSS(e,p);},curCSS:function(elem,prop,force){var ret,stack=[],swap=[];function color(a){if(!jQuery.browser.safari)return false;var ret=document.defaultView.getComputedStyle(a,null);return!ret||ret.getPropertyValue("color")=="";}if(prop=="opacity"&&jQuery.browser.msie){ret=jQuery.attr(elem.style,"opacity");return ret==""?"1":ret;}if(prop.match(/float/i))prop=styleFloat;if(!force&&elem.style[prop])ret=elem.style[prop];else if(document.defaultView&&document.defaultView.getComputedStyle){if(prop.match(/float/i))prop="float";prop=prop.replace(/([A-Z])/g,"-$1").toLowerCase();var cur=document.defaultView.getComputedStyle(elem,null);if(cur&&!color(elem))ret=cur.getPropertyValue(prop);else{for(var a=elem;a&&color(a);a=a.parentNode)stack.unshift(a);for(a=0;a<stack.length;a++)if(color(stack[a])){swap[a]=stack[a].style.display;stack[a].style.display="block";}ret=prop=="display"&&swap[stack.length-1]!=null?"none":document.defaultView.getComputedStyle(elem,null).getPropertyValue(prop)||"";for(a=0;a<swap.length;a++)if(swap[a]!=null)stack[a].style.display=swap[a];}if(prop=="opacity"&&ret=="")ret="1";}else if(elem.currentStyle){var newProp=prop.replace(/\-(\w)/g,function(m,c){return c.toUpperCase();});ret=elem.currentStyle[prop]||elem.currentStyle[newProp];if(!/^\d+(px)?$/i.test(ret)&&/^\d/.test(ret)){var style=elem.style.left;var runtimeStyle=elem.runtimeStyle.left;elem.runtimeStyle.left=elem.currentStyle.left;elem.style.left=ret||0;ret=elem.style.pixelLeft+"px";elem.style.left=style;elem.runtimeStyle.left=runtimeStyle;}}return ret;},clean:function(a,doc){var r=[];doc=doc||document;jQuery.each(a,function(i,arg){if(!arg)return;if(arg.constructor==Number)arg=arg.toString();if(typeof arg=="string"){arg=arg.replace(/(<(\w+)[^>]*?)\/>/g,function(m,all,tag){return tag.match(/^(abbr|br|col|img|input|link|meta|param|hr|area)$/i)?m:all+"></"+tag+">";});var s=jQuery.trim(arg).toLowerCase(),div=doc.createElement("div"),tb=[];var wrap=!s.indexOf("<opt")&&[1,"<select>","</select>"]||!s.indexOf("<leg")&&[1,"<fieldset>","</fieldset>"]||s.match(/^<(thead|tbody|tfoot|colg|cap)/)&&[1,"<table>","</table>"]||!s.indexOf("<tr")&&[2,"<table><tbody>","</tbody></table>"]||(!s.indexOf("<td")||!s.indexOf("<th"))&&[3,"<table><tbody><tr>","</tr></tbody></table>"]||!s.indexOf("<col")&&[2,"<table><tbody></tbody><colgroup>","</colgroup></table>"]||jQuery.browser.msie&&[1,"div<div>","</div>"]||[0,"",""];div.innerHTML=wrap[1]+arg+wrap[2];while(wrap[0]--)div=div.lastChild;if(jQuery.browser.msie){if(!s.indexOf("<table")&&s.indexOf("<tbody")<0)tb=div.firstChild&&div.firstChild.childNodes;else if(wrap[1]=="<table>"&&s.indexOf("<tbody")<0)tb=div.childNodes;for(var n=tb.length-1;n>=0;--n)if(jQuery.nodeName(tb[n],"tbody")&&!tb[n].childNodes.length)tb[n].parentNode.removeChild(tb[n]);if(/^\s/.test(arg))div.insertBefore(doc.createTextNode(arg.match(/^\s*/)[0]),div.firstChild);}arg=jQuery.makeArray(div.childNodes);}if(0===arg.length&&(!jQuery.nodeName(arg,"form")&&!jQuery.nodeName(arg,"select")))return;if(arg[0]==undefined||jQuery.nodeName(arg,"form")||arg.options)r.push(arg);else
+r=jQuery.merge(r,arg);});return r;},attr:function(elem,name,value){var fix=jQuery.isXMLDoc(elem)?{}:jQuery.props;if(name=="selected"&&jQuery.browser.safari)elem.parentNode.selectedIndex;if(fix[name]){if(value!=undefined)elem[fix[name]]=value;return elem[fix[name]];}else if(jQuery.browser.msie&&name=="style")return jQuery.attr(elem.style,"cssText",value);else if(value==undefined&&jQuery.browser.msie&&jQuery.nodeName(elem,"form")&&(name=="action"||name=="method"))return elem.getAttributeNode(name).nodeValue;else if(elem.tagName){if(value!=undefined){if(name=="type"&&jQuery.nodeName(elem,"input")&&elem.parentNode)throw"type property can't be changed";elem.setAttribute(name,value);}if(jQuery.browser.msie&&/href|src/.test(name)&&!jQuery.isXMLDoc(elem))return elem.getAttribute(name,2);return elem.getAttribute(name);}else{if(name=="opacity"&&jQuery.browser.msie){if(value!=undefined){elem.zoom=1;elem.filter=(elem.filter||"").replace(/alpha\([^)]*\)/,"")+(parseFloat(value).toString()=="NaN"?"":"alpha(opacity="+value*100+")");}return elem.filter?(parseFloat(elem.filter.match(/opacity=([^)]*)/)[1])/100).toString():"";}name=name.replace(/-([a-z])/ig,function(z,b){return b.toUpperCase();});if(value!=undefined)elem[name]=value;return elem[name];}},trim:function(t){return(t||"").replace(/^\s+|\s+$/g,"");},makeArray:function(a){var r=[];if(typeof a!="array")for(var i=0,al=a.length;i<al;i++)r.push(a[i]);else
+r=a.slice(0);return r;},inArray:function(b,a){for(var i=0,al=a.length;i<al;i++)if(a[i]==b)return i;return-1;},merge:function(first,second){if(jQuery.browser.msie){for(var i=0;second[i];i++)if(second[i].nodeType!=8)first.push(second[i]);}else
+for(var i=0;second[i];i++)first.push(second[i]);return first;},unique:function(first){var r=[],done={};try{for(var i=0,fl=first.length;i<fl;i++){var id=jQuery.data(first[i]);if(!done[id]){done[id]=true;r.push(first[i]);}}}catch(e){r=first;}return r;},grep:function(elems,fn,inv){if(typeof fn=="string")fn=eval("false||function(a,i){return "+fn+"}");var result=[];for(var i=0,el=elems.length;i<el;i++)if(!inv&&fn(elems[i],i)||inv&&!fn(elems[i],i))result.push(elems[i]);return result;},map:function(elems,fn){if(typeof fn=="string")fn=eval("false||function(a){return "+fn+"}");var result=[];for(var i=0,el=elems.length;i<el;i++){var val=fn(elems[i],i);if(val!==null&&val!=undefined){if(val.constructor!=Array)val=[val];result=result.concat(val);}}return result;}});var userAgent=navigator.userAgent.toLowerCase();jQuery.browser={version:(userAgent.match(/.+(?:rv|it|ra|ie)[\/: ]([\d.]+)/)||[])[1],safari:/webkit/.test(userAgent),opera:/opera/.test(userAgent),msie:/msie/.test(userAgent)&&!/opera/.test(userAgent),mozilla:/mozilla/.test(userAgent)&&!/(compatible|webkit)/.test(userAgent)};var styleFloat=jQuery.browser.msie?"styleFloat":"cssFloat";jQuery.extend({boxModel:!jQuery.browser.msie||document.compatMode=="CSS1Compat",styleFloat:jQuery.browser.msie?"styleFloat":"cssFloat",props:{"for":"htmlFor","class":"className","float":styleFloat,cssFloat:styleFloat,styleFloat:styleFloat,innerHTML:"innerHTML",className:"className",value:"value",disabled:"disabled",checked:"checked",readonly:"readOnly",selected:"selected",maxlength:"maxLength"}});jQuery.each({parent:"a.parentNode",parents:"jQuery.dir(a,'parentNode')",next:"jQuery.nth(a,2,'nextSibling')",prev:"jQuery.nth(a,2,'previousSibling')",nextAll:"jQuery.dir(a,'nextSibling')",prevAll:"jQuery.dir(a,'previousSibling')",siblings:"jQuery.sibling(a.parentNode.firstChild,a)",children:"jQuery.sibling(a.firstChild)",contents:"jQuery.nodeName(a,'iframe')?a.contentDocument||a.contentWindow.document:jQuery.makeArray(a.childNodes)"},function(i,n){jQuery.fn[i]=function(a){var ret=jQuery.map(this,n);if(a&&typeof a=="string")ret=jQuery.multiFilter(a,ret);return this.pushStack(jQuery.unique(ret));};});jQuery.each({appendTo:"append",prependTo:"prepend",insertBefore:"before",insertAfter:"after",replaceAll:"replaceWith"},function(i,n){jQuery.fn[i]=function(){var a=arguments;return this.each(function(){for(var j=0,al=a.length;j<al;j++)jQuery(a[j])[n](this);});};});jQuery.each({removeAttr:function(key){jQuery.attr(this,key,"");this.removeAttribute(key);},addClass:function(c){jQuery.className.add(this,c);},removeClass:function(c){jQuery.className.remove(this,c);},toggleClass:function(c){jQuery.className[jQuery.className.has(this,c)?"remove":"add"](this,c);},remove:function(a){if(!a||jQuery.filter(a,[this]).r.length){jQuery.removeData(this);this.parentNode.removeChild(this);}},empty:function(){jQuery("*",this).each(function(){jQuery.removeData(this);});while(this.firstChild)this.removeChild(this.firstChild);}},function(i,n){jQuery.fn[i]=function(){return this.each(n,arguments);};});jQuery.each(["Height","Width"],function(i,name){var n=name.toLowerCase();jQuery.fn[n]=function(h){return this[0]==window?jQuery.browser.safari&&self["inner"+name]||jQuery.boxModel&&Math.max(document.documentElement["client"+name],document.body["client"+name])||document.body["client"+name]:this[0]==document?Math.max(document.body["scroll"+name],document.body["offset"+name]):h==undefined?(this.length?jQuery.css(this[0],n):null):this.css(n,h.constructor==String?h:h+"px");};});var chars=jQuery.browser.safari&&parseInt(jQuery.browser.version)<417?"(?:[\\w*_-]|\\\\.)":"(?:[\\w\u0128-\uFFFF*_-]|\\\\.)",quickChild=new RegExp("^>\\s*("+chars+"+)"),quickID=new RegExp("^("+chars+"+)(#)("+chars+"+)"),quickClass=new RegExp("^([#.]?)("+chars+"*)");jQuery.extend({expr:{"":"m[2]=='*'||jQuery.nodeName(a,m[2])","#":"a.getAttribute('id')==m[2]",":":{lt:"i<m[3]-0",gt:"i>m[3]-0",nth:"m[3]-0==i",eq:"m[3]-0==i",first:"i==0",last:"i==r.length-1",even:"i%2==0",odd:"i%2","first-child":"a.parentNode.getElementsByTagName('*')[0]==a","last-child":"jQuery.nth(a.parentNode.lastChild,1,'previousSibling')==a","only-child":"!jQuery.nth(a.parentNode.lastChild,2,'previousSibling')",parent:"a.firstChild",empty:"!a.firstChild",contains:"(a.textContent||a.innerText||jQuery(a).text()||'').indexOf(m[3])>=0",visible:'"hidden"!=a.type&&jQuery.css(a,"display")!="none"&&jQuery.css(a,"visibility")!="hidden"',hidden:'"hidden"==a.type||jQuery.css(a,"display")=="none"||jQuery.css(a,"visibility")=="hidden"',enabled:"!a.disabled",disabled:"a.disabled",checked:"a.checked",selected:"a.selected||jQuery.attr(a,'selected')",text:"'text'==a.type",radio:"'radio'==a.type",checkbox:"'checkbox'==a.type",file:"'file'==a.type",password:"'password'==a.type",submit:"'submit'==a.type",image:"'image'==a.type",reset:"'reset'==a.type",button:'"button"==a.type||jQuery.nodeName(a,"button")',input:"/input|select|textarea|button/i.test(a.nodeName)",has:"jQuery.find(m[3],a).length",header:"/h\\d/i.test(a.nodeName)",animated:"jQuery.grep(jQuery.timers,function(fn){return a==fn.elem;}).length"}},parse:[/^(\[) *@?([\w-]+) *([!*$^~=]*) *('?"?)(.*?)\4 *\]/,/^(:)([\w-]+)\("?'?(.*?(\(.*?\))?[^(]*?)"?'?\)/,new RegExp("^([:.#]*)("+chars+"+)")],multiFilter:function(expr,elems,not){var old,cur=[];while(expr&&expr!=old){old=expr;var f=jQuery.filter(expr,elems,not);expr=f.t.replace(/^\s*,\s*/,"");cur=not?elems=f.r:jQuery.merge(cur,f.r);}return cur;},find:function(t,context){if(typeof t!="string")return[t];if(context&&!context.nodeType)context=null;context=context||document;var ret=[context],done=[],last;while(t&&last!=t){var r=[];last=t;t=jQuery.trim(t);var foundToken=false;var re=quickChild;var m=re.exec(t);if(m){var nodeName=m[1].toUpperCase();for(var i=0;ret[i];i++)for(var c=ret[i].firstChild;c;c=c.nextSibling)if(c.nodeType==1&&(nodeName=="*"||c.nodeName.toUpperCase()==nodeName.toUpperCase()))r.push(c);ret=r;t=t.replace(re,"");if(t.indexOf(" ")==0)continue;foundToken=true;}else{re=/^([>+~])\s*(\w*)/i;if((m=re.exec(t))!=null){r=[];var nodeName=m[2],merge={};m=m[1];for(var j=0,rl=ret.length;j<rl;j++){var n=m=="~"||m=="+"?ret[j].nextSibling:ret[j].firstChild;for(;n;n=n.nextSibling)if(n.nodeType==1){var id=jQuery.data(n);if(m=="~"&&merge[id])break;if(!nodeName||n.nodeName.toUpperCase()==nodeName.toUpperCase()){if(m=="~")merge[id]=true;r.push(n);}if(m=="+")break;}}ret=r;t=jQuery.trim(t.replace(re,""));foundToken=true;}}if(t&&!foundToken){if(!t.indexOf(",")){if(context==ret[0])ret.shift();done=jQuery.merge(done,ret);r=ret=[context];t=" "+t.substr(1,t.length);}else{var re2=quickID;var m=re2.exec(t);if(m){m=[0,m[2],m[3],m[1]];}else{re2=quickClass;m=re2.exec(t);}m[2]=m[2].replace(/\\/g,"");var elem=ret[ret.length-1];if(m[1]=="#"&&elem&&elem.getElementById&&!jQuery.isXMLDoc(elem)){var oid=elem.getElementById(m[2]);if((jQuery.browser.msie||jQuery.browser.opera)&&oid&&typeof oid.id=="string"&&oid.id!=m[2])oid=jQuery('[@id="'+m[2]+'"]',elem)[0];ret=r=oid&&(!m[3]||jQuery.nodeName(oid,m[3]))?[oid]:[];}else{for(var i=0;ret[i];i++){var tag=m[1]=="#"&&m[3]?m[3]:m[1]!=""||m[0]==""?"*":m[2];if(tag=="*"&&ret[i].nodeName.toLowerCase()=="object")tag="param";r=jQuery.merge(r,ret[i].getElementsByTagName(tag));}if(m[1]==".")r=jQuery.classFilter(r,m[2]);if(m[1]=="#"){var tmp=[];for(var i=0;r[i];i++)if(r[i].getAttribute("id")==m[2]){tmp=[r[i]];break;}r=tmp;}ret=r;}t=t.replace(re2,"");}}if(t){var val=jQuery.filter(t,r);ret=r=val.r;t=jQuery.trim(val.t);}}if(t)ret=[];if(ret&&context==ret[0])ret.shift();done=jQuery.merge(done,ret);return done;},classFilter:function(r,m,not){m=" "+m+" ";var tmp=[];for(var i=0;r[i];i++){var pass=(" "+r[i].className+" ").indexOf(m)>=0;if(!not&&pass||not&&!pass)tmp.push(r[i]);}return tmp;},filter:function(t,r,not){var last;while(t&&t!=last){last=t;var p=jQuery.parse,m;for(var i=0;p[i];i++){m=p[i].exec(t);if(m){t=t.substring(m[0].length);m[2]=m[2].replace(/\\/g,"");break;}}if(!m)break;if(m[1]==":"&&m[2]=="not")r=jQuery.filter(m[3],r,true).r;else if(m[1]==".")r=jQuery.classFilter(r,m[2],not);else if(m[1]=="["){var tmp=[],type=m[3];for(var i=0,rl=r.length;i<rl;i++){var a=r[i],z=a[jQuery.props[m[2]]||m[2]];if(z==null||/href|src|selected/.test(m[2]))z=jQuery.attr(a,m[2])||'';if((type==""&&!!z||type=="="&&z==m[5]||type=="!="&&z!=m[5]||type=="^="&&z&&!z.indexOf(m[5])||type=="$="&&z.substr(z.length-m[5].length)==m[5]||(type=="*="||type=="~=")&&z.indexOf(m[5])>=0)^not)tmp.push(a);}r=tmp;}else if(m[1]==":"&&m[2]=="nth-child"){var merge={},tmp=[],test=/(\d*)n\+?(\d*)/.exec(m[3]=="even"&&"2n"||m[3]=="odd"&&"2n+1"||!/\D/.test(m[3])&&"n+"+m[3]||m[3]),first=(test[1]||1)-0,last=test[2]-0;for(var i=0,rl=r.length;i<rl;i++){var node=r[i],parentNode=node.parentNode,id=jQuery.data(parentNode);if(!merge[id]){var c=1;for(var n=parentNode.firstChild;n;n=n.nextSibling)if(n.nodeType==1)n.nodeIndex=c++;merge[id]=true;}var add=false;if(first==1){if(last==0||node.nodeIndex==last)add=true;}else if((node.nodeIndex+last)%first==0)add=true;if(add^not)tmp.push(node);}r=tmp;}else{var f=jQuery.expr[m[1]];if(typeof f!="string")f=jQuery.expr[m[1]][m[2]];f=eval("false||function(a,i){return "+f+"}");r=jQuery.grep(r,f,not);}}return{r:r,t:t};},dir:function(elem,dir){var matched=[];var cur=elem[dir];while(cur&&cur!=document){if(cur.nodeType==1)matched.push(cur);cur=cur[dir];}return matched;},nth:function(cur,result,dir,elem){result=result||1;var num=0;for(;cur;cur=cur[dir])if(cur.nodeType==1&&++num==result)break;return cur;},sibling:function(n,elem){var r=[];for(;n;n=n.nextSibling){if(n.nodeType==1&&(!elem||n!=elem))r.push(n);}return r;}});jQuery.event={add:function(element,type,handler,data){if(jQuery.browser.msie&&element.setInterval!=undefined)element=window;if(!handler.guid)handler.guid=this.guid++;if(data!=undefined){var fn=handler;handler=function(){return fn.apply(this,arguments);};handler.data=data;handler.guid=fn.guid;}var parts=type.split(".");type=parts[0];handler.type=parts[1];var events=jQuery.data(element,"events")||jQuery.data(element,"events",{});var handle=jQuery.data(element,"handle",function(){var val;if(typeof jQuery=="undefined"||jQuery.event.triggered)return val;val=jQuery.event.handle.apply(element,arguments);return val;});var handlers=events[type];if(!handlers){handlers=events[type]={};if(element.addEventListener)element.addEventListener(type,handle,false);else
+element.attachEvent("on"+type,handle);}handlers[handler.guid]=handler;this.global[type]=true;},guid:1,global:{},remove:function(element,type,handler){var events=jQuery.data(element,"events"),ret,index;if(typeof type=="string"){var parts=type.split(".");type=parts[0];}if(events){if(type&&type.type){handler=type.handler;type=type.type;}if(!type){for(type in events)this.remove(element,type);}else if(events[type]){if(handler)delete events[type][handler.guid];else
+for(handler in events[type])if(!parts[1]||events[type][handler].type==parts[1])delete events[type][handler];for(ret in events[type])break;if(!ret){if(element.removeEventListener)element.removeEventListener(type,jQuery.data(element,"handle"),false);else
+element.detachEvent("on"+type,jQuery.data(element,"handle"));ret=null;delete events[type];}}for(ret in events)break;if(!ret){jQuery.removeData(element,"events");jQuery.removeData(element,"handle");}}},trigger:function(type,data,element,donative,extra){data=jQuery.makeArray(data||[]);if(!element){if(this.global[type])jQuery("*").add([window,document]).trigger(type,data);}else{var val,ret,fn=jQuery.isFunction(element[type]||null),evt=!data[0]||!data[0].preventDefault;if(evt)data.unshift(this.fix({type:type,target:element}));data[0].type=type;if(jQuery.isFunction(jQuery.data(element,"handle")))val=jQuery.data(element,"handle").apply(element,data);if(!fn&&element["on"+type]&&element["on"+type].apply(element,data)===false)val=false;if(evt)data.shift();if(extra&&extra.apply(element,data)===false)val=false;if(fn&&donative!==false&&val!==false&&!(jQuery.nodeName(element,'a')&&type=="click")){this.triggered=true;element[type]();}this.triggered=false;}return val;},handle:function(event){var val;event=jQuery.event.fix(event||window.event||{});var parts=event.type.split(".");event.type=parts[0];var c=jQuery.data(this,"events")&&jQuery.data(this,"events")[event.type],args=Array.prototype.slice.call(arguments,1);args.unshift(event);for(var j in c){args[0].handler=c[j];args[0].data=c[j].data;if(!parts[1]||c[j].type==parts[1]){var tmp=c[j].apply(this,args);if(val!==false)val=tmp;if(tmp===false){event.preventDefault();event.stopPropagation();}}}if(jQuery.browser.msie)event.target=event.preventDefault=event.stopPropagation=event.handler=event.data=null;return val;},fix:function(event){var originalEvent=event;event=jQuery.extend({},originalEvent);event.preventDefault=function(){if(originalEvent.preventDefault)originalEvent.preventDefault();originalEvent.returnValue=false;};event.stopPropagation=function(){if(originalEvent.stopPropagation)originalEvent.stopPropagation();originalEvent.cancelBubble=true;};if(!event.target&&event.srcElement)event.target=event.srcElement;if(jQuery.browser.safari&&event.target.nodeType==3)event.target=originalEvent.target.parentNode;if(!event.relatedTarget&&event.fromElement)event.relatedTarget=event.fromElement==event.target?event.toElement:event.fromElement;if(event.pageX==null&&event.clientX!=null){var e=document.documentElement,b=document.body;event.pageX=event.clientX+(e&&e.scrollLeft||b.scrollLeft||0);event.pageY=event.clientY+(e&&e.scrollTop||b.scrollTop||0);}if(!event.which&&(event.charCode||event.keyCode))event.which=event.charCode||event.keyCode;if(!event.metaKey&&event.ctrlKey)event.metaKey=event.ctrlKey;if(!event.which&&event.button)event.which=(event.button&1?1:(event.button&2?3:(event.button&4?2:0)));return event;}};jQuery.fn.extend({bind:function(type,data,fn){return type=="unload"?this.one(type,data,fn):this.each(function(){jQuery.event.add(this,type,fn||data,fn&&data);});},one:function(type,data,fn){return this.each(function(){jQuery.event.add(this,type,function(event){jQuery(this).unbind(event);return(fn||data).apply(this,arguments);},fn&&data);});},unbind:function(type,fn){return this.each(function(){jQuery.event.remove(this,type,fn);});},trigger:function(type,data,fn){return this.each(function(){jQuery.event.trigger(type,data,this,true,fn);});},triggerHandler:function(type,data,fn){if(this[0])return jQuery.event.trigger(type,data,this[0],false,fn);},toggle:function(){var a=arguments;return this.click(function(e){this.lastToggle=0==this.lastToggle?1:0;e.preventDefault();return a[this.lastToggle].apply(this,[e])||false;});},hover:function(f,g){function handleHover(e){var p=e.relatedTarget;while(p&&p!=this)try{p=p.parentNode;}catch(e){p=this;};if(p==this)return false;return(e.type=="mouseover"?f:g).apply(this,[e]);}return this.mouseover(handleHover).mouseout(handleHover);},ready:function(f){bindReady();if(jQuery.isReady)f.apply(document,[jQuery]);else
+jQuery.readyList.push(function(){return f.apply(this,[jQuery]);});return this;}});jQuery.extend({isReady:false,readyList:[],ready:function(){if(!jQuery.isReady){jQuery.isReady=true;if(jQuery.readyList){jQuery.each(jQuery.readyList,function(){this.apply(document);});jQuery.readyList=null;}if(jQuery.browser.mozilla||jQuery.browser.opera)document.removeEventListener("DOMContentLoaded",jQuery.ready,false);if(!window.frames.length)jQuery(window).load(function(){jQuery("#__ie_init").remove();});}}});jQuery.each(("blur,focus,load,resize,scroll,unload,click,dblclick,"+"mousedown,mouseup,mousemove,mouseover,mouseout,change,select,"+"submit,keydown,keypress,keyup,error").split(","),function(i,o){jQuery.fn[o]=function(f){return f?this.bind(o,f):this.trigger(o);};});var readyBound=false;function bindReady(){if(readyBound)return;readyBound=true;if(jQuery.browser.mozilla||jQuery.browser.opera)document.addEventListener("DOMContentLoaded",jQuery.ready,false);else if(jQuery.browser.msie){document.write("<scr"+"ipt id=__ie_init defer=true "+"src=//:><\/script>");var script=document.getElementById("__ie_init");if(script)script.onreadystatechange=function(){if(this.readyState!="complete")return;jQuery.ready();};script=null;}else if(jQuery.browser.safari)jQuery.safariTimer=setInterval(function(){if(document.readyState=="loaded"||document.readyState=="complete"){clearInterval(jQuery.safariTimer);jQuery.safariTimer=null;jQuery.ready();}},10);jQuery.event.add(window,"load",jQuery.ready);}jQuery.fn.extend({load:function(url,params,callback){if(jQuery.isFunction(url))return this.bind("load",url);var off=url.indexOf(" ");if(off>=0){var selector=url.slice(off,url.length);url=url.slice(0,off);}callback=callback||function(){};var type="GET";if(params)if(jQuery.isFunction(params)){callback=params;params=null;}else{params=jQuery.param(params);type="POST";}var self=this;jQuery.ajax({url:url,type:type,data:params,complete:function(res,status){if(status=="success"||status=="notmodified")self.html(selector?jQuery("<div/>").append(res.responseText.replace(/<script(.|\s)*?\/script>/g,"")).find(selector):res.responseText);setTimeout(function(){self.each(callback,[res.responseText,status,res]);},13);}});return this;},serialize:function(){return jQuery.param(this.serializeArray());},serializeArray:function(){return this.map(function(){return jQuery.nodeName(this,"form")?jQuery.makeArray(this.elements):this;}).filter(function(){return this.name&&!this.disabled&&(this.checked||/select|textarea/i.test(this.nodeName)||/text|hidden|password/i.test(this.type));}).map(function(i,elem){var val=jQuery(this).val();return val==null?null:val.constructor==Array?jQuery.map(val,function(val,i){return{name:elem.name,value:val};}):{name:elem.name,value:val};}).get();}});jQuery.each("ajaxStart,ajaxStop,ajaxComplete,ajaxError,ajaxSuccess,ajaxSend".split(","),function(i,o){jQuery.fn[o]=function(f){return this.bind(o,f);};});var jsc=(new Date).getTime();jQuery.extend({get:function(url,data,callback,type){if(jQuery.isFunction(data)){callback=data;data=null;}return jQuery.ajax({type:"GET",url:url,data:data,success:callback,dataType:type});},getScript:function(url,callback){return jQuery.get(url,null,callback,"script");},getJSON:function(url,data,callback){return jQuery.get(url,data,callback,"json");},post:function(url,data,callback,type){if(jQuery.isFunction(data)){callback=data;data={};}return jQuery.ajax({type:"POST",url:url,data:data,success:callback,dataType:type});},ajaxSetup:function(settings){jQuery.extend(jQuery.ajaxSettings,settings);},ajaxSettings:{global:true,type:"GET",timeout:0,contentType:"application/x-www-form-urlencoded",processData:true,async:true,data:null},lastModified:{},ajax:function(s){var jsonp,jsre=/=(\?|%3F)/g,status,data;s=jQuery.extend(true,s,jQuery.extend(true,{},jQuery.ajaxSettings,s));if(s.data&&s.processData&&typeof s.data!="string")s.data=jQuery.param(s.data);if(s.dataType=="jsonp"){if(s.type.toLowerCase()=="get"){if(!s.url.match(jsre))s.url+=(s.url.match(/\?/)?"&":"?")+(s.jsonp||"callback")+"=?";}else if(!s.data||!s.data.match(jsre))s.data=(s.data?s.data+"&":"")+(s.jsonp||"callback")+"=?";s.dataType="json";}if(s.dataType=="json"&&(s.data&&s.data.match(jsre)||s.url.match(jsre))){jsonp="jsonp"+jsc++;if(s.data)s.data=s.data.replace(jsre,"="+jsonp);s.url=s.url.replace(jsre,"="+jsonp);s.dataType="script";window[jsonp]=function(tmp){data=tmp;success();complete();window[jsonp]=undefined;try{delete window[jsonp];}catch(e){}};}if(s.dataType=="script"&&s.cache==null)s.cache=false;if(s.cache===false&&s.type.toLowerCase()=="get")s.url+=(s.url.match(/\?/)?"&":"?")+"_="+(new Date()).getTime();if(s.data&&s.type.toLowerCase()=="get"){s.url+=(s.url.match(/\?/)?"&":"?")+s.data;s.data=null;}if(s.global&&!jQuery.active++)jQuery.event.trigger("ajaxStart");if(!s.url.indexOf("http")&&s.dataType=="script"){var head=document.getElementsByTagName("head")[0];var script=document.createElement("script");script.src=s.url;if(!jsonp&&(s.success||s.complete)){var done=false;script.onload=script.onreadystatechange=function(){if(!done&&(!this.readyState||this.readyState=="loaded"||this.readyState=="complete")){done=true;success();complete();head.removeChild(script);}};}head.appendChild(script);return;}var requestDone=false;var xml=window.ActiveXObject?new ActiveXObject("Microsoft.XMLHTTP"):new XMLHttpRequest();xml.open(s.type,s.url,s.async);if(s.data)xml.setRequestHeader("Content-Type",s.contentType);if(s.ifModified)xml.setRequestHeader("If-Modified-Since",jQuery.lastModified[s.url]||"Thu, 01 Jan 1970 00:00:00 GMT");xml.setRequestHeader("X-Requested-With","XMLHttpRequest");if(s.beforeSend)s.beforeSend(xml);if(s.global)jQuery.event.trigger("ajaxSend",[xml,s]);var onreadystatechange=function(isTimeout){if(!requestDone&&xml&&(xml.readyState==4||isTimeout=="timeout")){requestDone=true;if(ival){clearInterval(ival);ival=null;}status=isTimeout=="timeout"&&"timeout"||!jQuery.httpSuccess(xml)&&"error"||s.ifModified&&jQuery.httpNotModified(xml,s.url)&&"notmodified"||"success";if(status=="success"){try{data=jQuery.httpData(xml,s.dataType);}catch(e){status="parsererror";}}if(status=="success"){var modRes;try{modRes=xml.getResponseHeader("Last-Modified");}catch(e){}if(s.ifModified&&modRes)jQuery.lastModified[s.url]=modRes;if(!jsonp)success();}else
+jQuery.handleError(s,xml,status);complete();if(s.async)xml=null;}};if(s.async){var ival=setInterval(onreadystatechange,13);if(s.timeout>0)setTimeout(function(){if(xml){xml.abort();if(!requestDone)onreadystatechange("timeout");}},s.timeout);}try{xml.send(s.data);}catch(e){jQuery.handleError(s,xml,null,e);}if(!s.async)onreadystatechange();return xml;function success(){if(s.success)s.success(data,status);if(s.global)jQuery.event.trigger("ajaxSuccess",[xml,s]);}function complete(){if(s.complete)s.complete(xml,status);if(s.global)jQuery.event.trigger("ajaxComplete",[xml,s]);if(s.global&&!--jQuery.active)jQuery.event.trigger("ajaxStop");}},handleError:function(s,xml,status,e){if(s.error)s.error(xml,status,e);if(s.global)jQuery.event.trigger("ajaxError",[xml,s,e]);},active:0,httpSuccess:function(r){try{return!r.status&&location.protocol=="file:"||(r.status>=200&&r.status<300)||r.status==304||jQuery.browser.safari&&r.status==undefined;}catch(e){}return false;},httpNotModified:function(xml,url){try{var xmlRes=xml.getResponseHeader("Last-Modified");return xml.status==304||xmlRes==jQuery.lastModified[url]||jQuery.browser.safari&&xml.status==undefined;}catch(e){}return false;},httpData:function(r,type){var ct=r.getResponseHeader("content-type");var xml=type=="xml"||!type&&ct&&ct.indexOf("xml")>=0;var data=xml?r.responseXML:r.responseText;if(xml&&data.documentElement.tagName=="parsererror")throw"parsererror";if(type=="script")jQuery.globalEval(data);if(type=="json")data=eval("("+data+")");return data;},param:function(a){var s=[];if(a.constructor==Array||a.jquery)jQuery.each(a,function(){s.push(encodeURIComponent(this.name)+"="+encodeURIComponent(this.value));});else
+for(var j in a)if(a[j]&&a[j].constructor==Array)jQuery.each(a[j],function(){s.push(encodeURIComponent(j)+"="+encodeURIComponent(this));});else
+s.push(encodeURIComponent(j)+"="+encodeURIComponent(a[j]));return s.join("&").replace(/%20/g,"+");}});jQuery.fn.extend({show:function(speed,callback){return speed?this.animate({height:"show",width:"show",opacity:"show"},speed,callback):this.filter(":hidden").each(function(){this.style.display=this.oldblock?this.oldblock:"";if(jQuery.css(this,"display")=="none")this.style.display="block";}).end();},hide:function(speed,callback){return speed?this.animate({height:"hide",width:"hide",opacity:"hide"},speed,callback):this.filter(":visible").each(function(){this.oldblock=this.oldblock||jQuery.css(this,"display");if(this.oldblock=="none")this.oldblock="block";this.style.display="none";}).end();},_toggle:jQuery.fn.toggle,toggle:function(fn,fn2){return jQuery.isFunction(fn)&&jQuery.isFunction(fn2)?this._toggle(fn,fn2):fn?this.animate({height:"toggle",width:"toggle",opacity:"toggle"},fn,fn2):this.each(function(){jQuery(this)[jQuery(this).is(":hidden")?"show":"hide"]();});},slideDown:function(speed,callback){return this.animate({height:"show"},speed,callback);},slideUp:function(speed,callback){return this.animate({height:"hide"},speed,callback);},slideToggle:function(speed,callback){return this.animate({height:"toggle"},speed,callback);},fadeIn:function(speed,callback){return this.animate({opacity:"show"},speed,callback);},fadeOut:function(speed,callback){return this.animate({opacity:"hide"},speed,callback);},fadeTo:function(speed,to,callback){return this.animate({opacity:to},speed,callback);},animate:function(prop,speed,easing,callback){var opt=jQuery.speed(speed,easing,callback);return this[opt.queue===false?"each":"queue"](function(){opt=jQuery.extend({},opt);var hidden=jQuery(this).is(":hidden"),self=this;for(var p in prop){if(prop[p]=="hide"&&hidden||prop[p]=="show"&&!hidden)return jQuery.isFunction(opt.complete)&&opt.complete.apply(this);if(p=="height"||p=="width"){opt.display=jQuery.css(this,"display");opt.overflow=this.style.overflow;}}if(opt.overflow!=null)this.style.overflow="hidden";opt.curAnim=jQuery.extend({},prop);jQuery.each(prop,function(name,val){var e=new jQuery.fx(self,opt,name);if(/toggle|show|hide/.test(val))e[val=="toggle"?hidden?"show":"hide":val](prop);else{var parts=val.toString().match(/^([+-]=)?([\d+-.]+)(.*)$/),start=e.cur(true)||0;if(parts){var end=parseFloat(parts[2]),unit=parts[3]||"px";if(unit!="px"){self.style[name]=(end||1)+unit;start=((end||1)/e.cur(true))*start;self.style[name]=start+unit;}if(parts[1])end=((parts[1]=="-="?-1:1)*end)+start;e.custom(start,end,unit);}else
+e.custom(start,val,"");}});return true;});},queue:function(type,fn){if(jQuery.isFunction(type)){fn=type;type="fx";}if(!type||(typeof type=="string"&&!fn))return queue(this[0],type);return this.each(function(){if(fn.constructor==Array)queue(this,type,fn);else{queue(this,type).push(fn);if(queue(this,type).length==1)fn.apply(this);}});},stop:function(){var timers=jQuery.timers;return this.each(function(){for(var i=0;i<timers.length;i++)if(timers[i].elem==this)timers.splice(i--,1);}).dequeue();}});var queue=function(elem,type,array){if(!elem)return;var q=jQuery.data(elem,type+"queue");if(!q||array)q=jQuery.data(elem,type+"queue",array?jQuery.makeArray(array):[]);return q;};jQuery.fn.dequeue=function(type){type=type||"fx";return this.each(function(){var q=queue(this,type);q.shift();if(q.length)q[0].apply(this);});};jQuery.extend({speed:function(speed,easing,fn){var opt=speed&&speed.constructor==Object?speed:{complete:fn||!fn&&easing||jQuery.isFunction(speed)&&speed,duration:speed,easing:fn&&easing||easing&&easing.constructor!=Function&&easing};opt.duration=(opt.duration&&opt.duration.constructor==Number?opt.duration:{slow:600,fast:200}[opt.duration])||400;opt.old=opt.complete;opt.complete=function(){jQuery(this).dequeue();if(jQuery.isFunction(opt.old))opt.old.apply(this);};return opt;},easing:{linear:function(p,n,firstNum,diff){return firstNum+diff*p;},swing:function(p,n,firstNum,diff){return((-Math.cos(p*Math.PI)/2)+0.5)*diff+firstNum;}},timers:[],fx:function(elem,options,prop){this.options=options;this.elem=elem;this.prop=prop;if(!options.orig)options.orig={};}});jQuery.fx.prototype={update:function(){if(this.options.step)this.options.step.apply(this.elem,[this.now,this]);(jQuery.fx.step[this.prop]||jQuery.fx.step._default)(this);if(this.prop=="height"||this.prop=="width")this.elem.style.display="block";},cur:function(force){if(this.elem[this.prop]!=null&&this.elem.style[this.prop]==null)return this.elem[this.prop];var r=parseFloat(jQuery.curCSS(this.elem,this.prop,force));return r&&r>-10000?r:parseFloat(jQuery.css(this.elem,this.prop))||0;},custom:function(from,to,unit){this.startTime=(new Date()).getTime();this.start=from;this.end=to;this.unit=unit||this.unit||"px";this.now=this.start;this.pos=this.state=0;this.update();var self=this;function t(){return self.step();}t.elem=this.elem;jQuery.timers.push(t);if(jQuery.timers.length==1){var timer=setInterval(function(){var timers=jQuery.timers;for(var i=0;i<timers.length;i++)if(!timers[i]())timers.splice(i--,1);if(!timers.length)clearInterval(timer);},13);}},show:function(){this.options.orig[this.prop]=jQuery.attr(this.elem.style,this.prop);this.options.show=true;this.custom(0,this.cur());if(this.prop=="width"||this.prop=="height")this.elem.style[this.prop]="1px";jQuery(this.elem).show();},hide:function(){this.options.orig[this.prop]=jQuery.attr(this.elem.style,this.prop);this.options.hide=true;this.custom(this.cur(),0);},step:function(){var t=(new Date()).getTime();if(t>this.options.duration+this.startTime){this.now=this.end;this.pos=this.state=1;this.update();this.options.curAnim[this.prop]=true;var done=true;for(var i in this.options.curAnim)if(this.options.curAnim[i]!==true)done=false;if(done){if(this.options.display!=null){this.elem.style.overflow=this.options.overflow;this.elem.style.display=this.options.display;if(jQuery.css(this.elem,"display")=="none")this.elem.style.display="block";}if(this.options.hide)this.elem.style.display="none";if(this.options.hide||this.options.show)for(var p in this.options.curAnim)jQuery.attr(this.elem.style,p,this.options.orig[p]);}if(done&&jQuery.isFunction(this.options.complete))this.options.complete.apply(this.elem);return false;}else{var n=t-this.startTime;this.state=n/this.options.duration;this.pos=jQuery.easing[this.options.easing||(jQuery.easing.swing?"swing":"linear")](this.state,n,0,1,this.options.duration);this.now=this.start+((this.end-this.start)*this.pos);this.update();}return true;}};jQuery.fx.step={scrollLeft:function(fx){fx.elem.scrollLeft=fx.now;},scrollTop:function(fx){fx.elem.scrollTop=fx.now;},opacity:function(fx){jQuery.attr(fx.elem.style,"opacity",fx.now);},_default:function(fx){fx.elem.style[fx.prop]=fx.now+fx.unit;}};jQuery.fn.offset=function(){var left=0,top=0,elem=this[0],results;if(elem)with(jQuery.browser){var absolute=jQuery.css(elem,"position")=="absolute",parent=elem.parentNode,offsetParent=elem.offsetParent,doc=elem.ownerDocument,safari2=safari&&parseInt(version)<522;if(elem.getBoundingClientRect){box=elem.getBoundingClientRect();add(box.left+Math.max(doc.documentElement.scrollLeft,doc.body.scrollLeft),box.top+Math.max(doc.documentElement.scrollTop,doc.body.scrollTop));if(msie){var border=jQuery("html").css("borderWidth");border=(border=="medium"||jQuery.boxModel&&parseInt(version)>=7)&&2||border;add(-border,-border);}}else{add(elem.offsetLeft,elem.offsetTop);while(offsetParent){add(offsetParent.offsetLeft,offsetParent.offsetTop);if(mozilla&&/^t[d|h]$/i.test(parent.tagName)||!safari2)border(offsetParent);if(safari2&&!absolute&&jQuery.css(offsetParent,"position")=="absolute")absolute=true;offsetParent=offsetParent.offsetParent;}while(parent.tagName&&!/^body|html$/i.test(parent.tagName)){if(!/^inline|table-row.*$/i.test(jQuery.css(parent,"display")))add(-parent.scrollLeft,-parent.scrollTop);if(mozilla&&jQuery.css(parent,"overflow")!="visible")border(parent);parent=parent.parentNode;}if(safari2&&absolute)add(-doc.body.offsetLeft,-doc.body.offsetTop);}results={top:top,left:left};}return results;function border(elem){add(jQuery.css(elem,"borderLeftWidth"),jQuery.css(elem,"borderTopWidth"));}function add(l,t){left+=parseInt(l)||0;top+=parseInt(t)||0;}};})();
+
+===== src/lzmock.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Released under the MIT License. */
+
+var Mock = {
+    configure: function(options) {
+        this.options = options;
+    },
+    create: function(master) {
+        return new MockObject(master);
+    },
+    callback: function(value) {
+        return new this.Callback(value);
+    },
+    expectEvent: function(sender, eventName, expected) {
+        var self = this,
+            delegate = new LzDelegate({run:run}, 'run', sender, eventName)
+        delegate.sender = sender;
+        delegate.eventName = eventName;
+        delegate.error = 'was not sent';
+        this._events.push(delegate);
+        function run(value) {
+            if (!delegate.error)
+                return;
+            delegate.error = 'was called, but with the wrong arguments';
+            if (typeof expected == 'undefined' && typeof value == 'undefined'
+                || Expect.value(expected, value, function(message) {
+                    delegate.error = message;
+                }))
+                delegate.error = null;
+        }
+    },
+    verify: function(testCase) {
+        var mocks = this['_registered'] || [];
+        delete this.mocks;
+        for (var i = 0; i < mocks.length; i++)
+            mocks[i].mock.verify(testCase);
+    },
+    verifyEvents: function(fail) {
+        var events = this._events;
+        this._events = [];
+        for (var i = 0; i < events.length; i++) {
+            var delegate = events[i];
+            delegate.unregisterAll();
+            if (delegate.error)
+                fail.apply(null, [delegate.sender+'.'+delegate.eventName+':']
+                           .concat(delegate.error));
+        }
+    },
+    // private:
+    _register: function(mock) {
+        (this._registered = this['_registered'] || []).push(mock);
+    },
+    _events: [],
+    Callback: function(value) {
+        this.exec = function(fn) {
+            if (fn instanceof Function)
+                this['async']
+                ? setTimeout(function() {fn.call(null, value)}, 10)
+                : fn.call(null, value);
+        }
+    },
+    _combineAdjacentStrings: function(array) {
+        var result = [],
+            previous = null;
+        for (var i = 0; i < array.length; i++) {
+            var item = array[i];
+            if (typeof item == 'string' && typeof previous == 'string')
+                result[result.length-1] += ' ' + item;
+            else
+                result[result.length] = previous = item;
+        }
+        return result;
+    }
+}
+
+
+function MockObject(master) {
+    var self = this,
+        expector = {},
+        expectations = [],
+        stubs = {},
+        error = false,
+        errors = [];
+    Mock._register(this);
+    addMethods(master);
+    if (typeof master == 'function') {
+        addMethods(new master);
+        var finalizer = (master['mock']||{})['finalize'] || null;
+        finalizer && finalizer(this);
+    }
+    var mock = this.mock = {expects: expector, verify: verify, testCase: null};
+    this['expects'] || (this.expects = expector);
+    this['verify'] || (this.verify = verify);
+    this.stubs = this.stub = stubber;
+    function stubber(name) {
+        var callback = null,
+            returnValue = null,
+            stub = stubs[name] = {
+                applyTo: function(args) {
+                    Mock['trace'] && Debug.write('stub', name, args);
+                    if (callback)
+                        for (var i = 0; i < args.length; i++) {
+                            if (typeof args[i] == 'function') {
+                                args[i].apply(null, callback);
+                                break;
+                            }
+                        }
+                    return typeof returnValue ? undefined : returnValue[0];
+                },
+                callback: function(value) {
+                    callback = Array.slice(arguments, 0);
+                },
+                calling: function(value) {
+                    callback = Array.slice(arguments, 0);
+                },
+                returning: function(value) {
+                    returnValue = [value];
+                }
+            };
+        stub.by = stub.and = stub;
+        return stub;
+    };
+    function addMethods(object) {
+        for (var name in object)
+            typeof object[name] == 'function' && addMethod(name);
+    }
+    function addMethod(name) {
+        stubber[name] = stubber(name);
+        self[name] = function() {
+            Mock['trace'] && Debug.write('call', name, arguments);
+            // stop checking if we've already had an error
+            if (error) return;
+            var stub = stubs[name];
+            // if there's no expectation, or this isn't the next
+            // expectation, then it's only okay if there's a stub
+            if (!expectations.length || expectations[0].name != name) {
+                return stub
+                    ? stub.applyTo(arguments)
+                    : fail(['unexpected call to ', master, '.', name, '()'].
+                           join(''));
+            }
+            var expectation = expectations.shift(),
+                actualArgs = arguments;
+            Expect.arguments(expectation.arguments, arguments, function() {
+                Array.prototype.push.call(arguments, '\n  in call to', name);
+                fail.apply(null, Mock._combineAdjacentStrings(arguments));
+            });
+            for (var ix = 0; ix < arguments.length; ix++)
+                if (expectation.arguments[ix] instanceof Mock.Callback)
+                    expectation.arguments[ix].exec(arguments[ix]);
+            if (expectation.hasReturnValue)
+                return expectation.returnValue;
+            if (stub)
+                return stub.applyTo(arguments);
+        };
+        expector[name] = function() {
+            Mock['trace'] && Debug.write('expect', name, arguments);
+            var options = {},
+                expectation = {
+                    name: name,
+                    arguments: Array.slice(arguments, 0),
+                    hasReturnValue: false,
+                    returnValue: undefined
+                };
+            expectations.push(expectation);
+
+            return Fluently.make(function(define) {
+                define('calls', calls),
+                define('returns', returns);
+                define.alias('calls.back', 'calls');
+                define('captures.callback', function(pos) {
+                    if (arguments.length < 1)
+                        pos = findFirstFunction();
+                    var cb = expectation.arguments[pos] = Mock.callback(undefined);
+                    cb.exec = function(fn) { this.fn = fn }
+                    cb.call = function(values) { this.fn.apply(undefined, arguments) }
+                    return cb;
+                });
+                define.empty('and');
+                define.modifier.dictionary(options);
+                define.modifier('eventually');
+            });
+            function findFirstFunction() {
+                var args = expectation.arguments,
+                    len = args.length;
+                for (var i = 0; i < len; i++)
+                    if (args[i] == Function)
+                        return i;
+                Debug.error('no function position');
+            }
+
+            function calls(pos, value) {
+                if (arguments.length < 2) {
+                    value = pos;
+                    pos = findFirstFunction();
+                }
+                var cb = expectation.arguments[pos] = Mock.callback(value);
+                cb.async = options.eventually;
+            };
+            function returns(value) {
+                expectation.hasReturnValue = true;
+                expectation.returnValue = value;
+            }
+        }
+    }
+    function fail() {
+        Debug.error.apply(Debug, arguments);
+        var testCase = mock.testCase;
+        Debug.write(testCase);
+        if (testCase)
+            testCase.fail.call(testCase, arguments.join(' '));
+        else
+            errors.push(Array.slice(arguments, 0));
+        error = true;
+    }
+    function verify(testcase) {
+        expectations.length &&
+            fail(['expected call to ', master, '.', expectations[0].name,
+                  '(); didn\'t happen'].join(''));
+        if (arguments.length) {
+            for (var ix = 0; ix < errors.length; ix++)
+                testcase.fail(errors[ix].join(' '));
+            errors.length || testcase.assertTrue(true);
+        }
+        expectations = [];
+        errors = [];
+        error = false;
+        Mock.verifyEvents(function() {
+            fail.apply(null, arguments);
+            testcase.fail(Array.slice(arguments, 0).join(' '));
+        });
+    }
+}
+
+var Expect = {
+    limit: null,
+
+    _makeContext: function(expected, actual, parent) {
+        return {expected: expected,
+                actual: actual,
+                parent: parent,
+                isExpectationContext: true,
+                where: null,
+                at: function(where) {this.where=where; return this},
+                fail:reportError};
+
+        function reportError() {
+            var message = ['Values differ'],
+                first = true;
+                context = this;
+            while (true) {
+                if (!context['isExpectationContext']) {
+                    context.apply(null, message);
+                    return false;
+                }
+                if (!first)
+                    message.push('\n  ');
+                first = false;
+                context.where && message.push('at', context.where);
+                message.push('in', context['actual'],
+                             '; expected', context.expected);
+                context = context.parent;
+            }
+        }
+    },
+
+    arguments: function(expected, actual, context) {
+        context = this._makeContext(expected, actual, context);
+        if (expected.length != actual.length)
+            return context.fail('length == ' + actual.length);
+        for (var ix = 0; ix < arguments.length; ix++) {
+            var e = expected[ix],
+                a = actual[ix];
+            if (!this.value(e, a, context.at('position ' + (ix+1))))
+                return false;
+        }
+        return true;
+    },
+
+    value: function(expected, actual, context) {
+        context = this._makeContext(expected, actual, context);
+        if (expected == actual)
+            return true;
+        if (this.limit != null) {
+            if (this.limit <= 0)
+                return;
+            this.limit -= 1;
+            0 && Debug.write('cf', expected, 'and', actual);
+        }
+        if (expected instanceof Function &&
+            (actual instanceof expected || actual === null))
+            return true;
+        if (expected instanceof Function)
+            return context.fail('function');
+        if (expected instanceof LzDataElement)
+            return this._xml(expected, actual, context);
+        if (expected instanceof Mock.Callback) {
+            if (!actual || typeof actual == 'function' || actual instanceof LzDelegate)
+                return true;
+            return context.fail('callback');
+        }
+        //if (expected.__proto__ != actual.__proto__)
+        //    return fail(expected, 'and', actual, 'have different prototypes');
+        if (expected instanceof Date)
+            return (actual instanceof Date && expected.getTime() == actual.getTime())
+            ? true
+            : context.fail();
+        if (typeof expected == 'object' && typeof actual == 'object') {
+            if (expected instanceof Array && expected.length != actual.length)
+                return context.fail('length');
+            for (var name in expected)
+                if (!this.value(expected[name], actual[name],
+                                context.at('property ' + name)))
+                    return false;
+            return true;
+        }
+        return context.fail();
+    },
+
+    _xml: function(expected, actual, context) {
+        if (expected.nodeName != actual.nodeName)
+            return context.at('nodeName').fail();
+        var eattributes = expected['attributes']||{},
+            echildren = expected['childNodes']||[];
+        for (var aname in eattributes) {
+            var evalue = expected.attributes[aname],
+                avalue = actual.attributes[aname],
+                con = this._makeContext(evalue, avalue, context);
+            con.at('attribute ' + aname);
+            if (typeof avalue == 'undefined')
+                return con.fail();
+            if (evalue == '*')
+                continue;
+            if (evalue.charAt(0) == '{' && evalue.charAt(evalue.length-1) == '}')
+                evalue = eval(evalue.substring(1, evalue.length-1));
+            switch (evalue) {
+            case Number:
+                if (typeof avalue != 'number' && parseInt(avalue) != avalue)
+                    return con.fail();
+                break;
+            case String:
+                break;
+            default:
+                if (evalue != avalue)
+                    return con.fail();
+            }
+        }
+        var includesText = false;
+        for (var ix = 0; ix < echildren.length; ix++) {
+            var echild = echildren[ix];
+            if (echild instanceof LzDataText) {
+                includesText = true;
+                continue;
+            }
+            var cname = echild.nodeName,
+                achild = null;
+            for (var j = 0; j < actual.childNodes.length; j++) {
+                if (actual.childNodes[j]['nodeName'] == cname)
+                    achild = achild || actual.childNodes[j];
+            }
+            if (!achild)
+                return context.at('child named ' + cname).fail();
+            if (echild['text']) {
+                if (echild.text != achild.childNodes[0].data)
+                    return context.fail(/*echild.text, achild*/);
+            } else
+                if (!Expect.value(echild, achild, context))
+                    return;
+        }
+        if (includesText)
+            return Expect.value(expected.toString(), actual.toString(), context);
+        return true;
+    }
+}
+
+function mock(object) {
+    return Mock.create.apply(Mock, arguments);
+}
+
+// OL 3.4 compatibility
+Test.addProperty != Object.addProperty
+    || (Test.addProperty = function(name, value) {this.prototype[name] = value});
+
+Test.addProperty('mock', function(object) {
+    var mock = Mock.create.apply(Mock, arguments);
+    mock.mock.testCase = this;
+    return mock;
+});
+
+Test.addProperty('mock', function(object) {
+    var mock = Mock.create.apply(Mock, arguments);
+    mock.mock.testCase = this;
+    return mock;
+});
+
+
+/*
+ * JavaScript extensions
+ */
+
+Array['slice'] || (Array.slice = (function() {
+    var slice = Array.prototype.slice;
+    return function(array) {
+        return slice.apply(array, slice.call(arguments, 1));
+    }
+})());
+
+
+===== lib/swfobject.js =====
+/**
+ * SWFObject v1.5: Flash Player detection and embed - http://blog.deconcept.com/swfobject/
+ *
+ * SWFObject is (c) 2007 Geoff Stearns and is released under the MIT License:
+ * http://www.opensource.org/licenses/mit-license.php
+ *
+ */
+if(typeof deconcept=="undefined"){var deconcept=new Object();}if(typeof deconcept.util=="undefined"){deconcept.util=new Object();}if(typeof deconcept.SWFObjectUtil=="undefined"){deconcept.SWFObjectUtil=new Object();}deconcept.SWFObject=function(_1,id,w,h,_5,c,_7,_8,_9,_a){if(!document.getElementById){return;}this.DETECT_KEY=_a?_a:"detectflash";this.skipDetect=deconcept.util.getRequestParameter(this.DETECT_KEY);this.params=new Object();this.variables=new Object();this.attributes=new Array();if(_1){this.setAttribute("swf",_1);}if(id){this.setAttribute("id",id);}if(w){this.setAttribute("width",w);}if(h){this.setAttribute("height",h);}if(_5){this.setAttribute("version",new deconcept.PlayerVersion(_5.toString().split(".")));}this.installedVer=deconcept.SWFObjectUtil.getPlayerVersion();if(!window.opera&&document.all&&this.installedVer.major>7){deconcept.SWFObject.doPrepUnload=true;}if(c){this.addParam("bgcolor",c);}var q=_7?_7:"high";this.addParam("quality",q);this.setAttribute("useExpressInstall",false);this.setAttribute("doExpressInstall",false);var _c=(_8)?_8:window.location;this.setAttribute("xiRedirectUrl",_c);this.setAttribute("redirectUrl","");if(_9){this.setAttribute("redirectUrl",_9);}};deconcept.SWFObject.prototype={useExpressInstall:function(_d){this.xiSWFPath=!_d?"expressinstall.swf":_d;this.setAttribute("useExpressInstall",true);},setAttribute:function(_e,_f){this.attributes[_e]=_f;},getAttribute:function(_10){return this.attributes[_10];},addParam:function(_11,_12){this.params[_11]=_12;},getParams:function(){return this.params;},addVariable:function(_13,_14){this.variables[_13]=_14;},getVariable:function(_15){return this.variables[_15];},getVariables:function(){return this.variables;},getVariablePairs:function(){var _16=new Array();var key;var _18=this.getVariables();for(key in _18){_16[_16.length]=key+"="+_18[key];}return _16;},getSWFHTML:function(){var _19="";if(navigator.plugins&&navigator.mimeTypes&&navigator.mimeTypes.length){if(this.getAttribute("doExpressInstall")){this.addVariable("MMplayerType","PlugIn");this.setAttribute("swf",this.xiSWFPath);}_19="<embed type=\"application/x-shockwave-flash\" src=\""+this.getAttribute("swf")+"\" width=\""+this.getAttribute("width")+"\" height=\""+this.getAttribute("height")+"\" style=\""+this.getAttribute("style")+"\"";_19+=" id=\""+this.getAttribute("id")+"\" name=\""+this.getAttribute("id")+"\" ";var _1a=this.getParams();for(var key in _1a){_19+=[key]+"=\""+_1a[key]+"\" ";}var _1c=this.getVariablePairs().join("&");if(_1c.length>0){_19+="flashvars=\""+_1c+"\"";}_19+="/>";}else{if(this.getAttribute("doExpressInstall")){this.addVariable("MMplayerType","ActiveX");this.setAttribute("swf",this.xiSWFPath);}_19="<object id=\""+this.getAttribute("id")+"\" classid=\"clsid:D27CDB6E-AE6D-11cf-96B8-444553540000\" width=\""+this.getAttribute("width")+"\" height=\""+this.getAttribute("height")+"\" style=\""+this.getAttribute("style")+"\">";_19+="<param name=\"movie\" value=\""+this.getAttribute("swf")+"\" />";var _1d=this.getParams();for(var key in _1d){_19+="<param name=\""+key+"\" value=\""+_1d[key]+"\" />";}var _1f=this.getVariablePairs().join("&");if(_1f.length>0){_19+="<param name=\"flashvars\" value=\""+_1f+"\" />";}_19+="</object>";}return _19;},write:function(_20){if(this.getAttribute("useExpressInstall")){var _21=new deconcept.PlayerVersion([6,0,65]);if(this.installedVer.versionIsValid(_21)&&!this.installedVer.versionIsValid(this.getAttribute("version"))){this.setAttribute("doExpressInstall",true);this.addVariable("MMredirectURL",escape(this.getAttribute("xiRedirectUrl")));document.title=document.title.slice(0,47)+" - Flash Player Installation";this.addVariable("MMdoctitle",document.title);}}if(this.skipDetect||this.getAttribute("doExpressInstall")||this.installedVer.versionIsValid(this.getAttribute("version"))){var n=(typeof _20=="string")?document.getElementById(_20):_20;n.innerHTML=this.getSWFHTML();return true;}else{if(this.getAttribute("redirectUrl")!=""){document.location.replace(this.getAttribute("redirectUrl"));}}return false;}};deconcept.SWFObjectUtil.getPlayerVersion=function(){var _23=new deconcept.PlayerVersion([0,0,0]);if(navigator.plugins&&navigator.mimeTypes.length){var x=navigator.plugins["Shockwave Flash"];if(x&&x.description){_23=new deconcept.PlayerVersion(x.description.replace(/([a-zA-Z]|\s)+/,"").replace(/(\s+r|\s+b[0-9]+)/,".").split("."));}}else{if(navigator.userAgent&&navigator.userAgent.indexOf("Windows CE")>=0){var axo=1;var _26=3;while(axo){try{_26++;axo=new ActiveXObject("ShockwaveFlash.ShockwaveFlash."+_26);_23=new deconcept.PlayerVersion([_26,0,0]);}catch(e){axo=null;}}}else{try{var axo=new ActiveXObject("ShockwaveFlash.ShockwaveFlash.7");}catch(e){try{var axo=new ActiveXObject("ShockwaveFlash.ShockwaveFlash.6");_23=new deconcept.PlayerVersion([6,0,21]);axo.AllowScriptAccess="always";}catch(e){if(_23.major==6){return _23;}}try{axo=new ActiveXObject("ShockwaveFlash.ShockwaveFlash");}catch(e){}}if(axo!=null){_23=new deconcept.PlayerVersion(axo.GetVariable("$version").split(" ")[1].split(","));}}}return _23;};deconcept.PlayerVersion=function(_29){this.major=_29[0]!=null?parseInt(_29[0]):0;this.minor=_29[1]!=null?parseInt(_29[1]):0;this.rev=_29[2]!=null?parseInt(_29[2]):0;};deconcept.PlayerVersion.prototype.versionIsValid=function(fv){if(this.major<fv.major){return false;}if(this.major>fv.major){return true;}if(this.minor<fv.minor){return false;}if(this.minor>fv.minor){return true;}if(this.rev<fv.rev){return false;}return true;};deconcept.util={getRequestParameter:function(_2b){var q=document.location.search||document.location.hash;if(_2b==null){return q;}if(q){var _2d=q.substring(1).split("&");for(var i=0;i<_2d.length;i++){if(_2d[i].substring(0,_2d[i].indexOf("="))==_2b){return _2d[i].substring((_2d[i].indexOf("=")+1));}}}return "";}};deconcept.SWFObjectUtil.cleanupSWFs=function(){var _2f=document.getElementsByTagName("OBJECT");for(var i=_2f.length-1;i>=0;i--){_2f[i].style.display="none";for(var x in _2f[i]){if(typeof _2f[i][x]=="function"){_2f[i][x]=function(){};}}}};if(deconcept.SWFObject.doPrepUnload){if(!deconcept.unloadSet){deconcept.SWFObjectUtil.prepUnload=function(){__flash_unloadHandler=function(){};__flash_savedUnloadHandler=function(){};window.attachEvent("onunload",deconcept.SWFObjectUtil.cleanupSWFs);};window.attachEvent("onbeforeunload",deconcept.SWFObjectUtil.prepUnload);deconcept.unloadSet=true;}}if(!document.getElementById&&document.all){document.getElementById=function(id){return document.all[id];};}var getQueryParamValue=deconcept.util.getRequestParameter;var FlashObject=deconcept.SWFObject;var SWFObject=deconcept.SWFObject;
+
+===== src/autorun-browser.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Available under the MIT License.
+ *
+ * Browser support for the lztestkit autorun facility.
+ */
+
+window.console || (window.console={info:function(){}});
+
+var gRunner;
+
+function LzTestRunner(files) {
+    this.initialize.apply(this, arguments);
+}
+
+LzTestRunner.skip = 0;
+
+LzTestRunner.run = function(options) {
+    var files = options.files,
+        match = options.match || /.*/,
+        exclude = options.exclude,
+        matches = [];
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (!file.match(/\.swf$/)
+            && !file.match(/^(#.*#|\.#.*|.*~)$/)
+            && file.match(match)
+            && (!exclude || !file.match(exclude)))
+            matches.push(file);
+    }
+    gRunner = new LzTestRunner(matches);
+    gRunner.run();
+}
+
+LzTestRunner.prototype = {
+    initialize: function(files) {
+        this.files = files;
+        this.remaining = [].concat(files);
+        this.current = null;
+    },
+
+    run: function() {
+        $('body').addClass('running');
+        this.runNext();
+    },
+
+    runNext: function() {
+        var remaining = this.remaining;
+        remaining.length
+            ? this.load(remaining.shift())
+            : this.done();
+    },
+
+    done: function() {
+        this.files.length
+            ? this.success(true)
+            : this.failed("No matching files");
+    },
+
+    success: function() {
+        this.unload();
+        this.status('success');
+        $('body').removeClass('running').addClass('success');
+        var files = this.files,
+            html = [];
+        this.message('Ran ' + files.length + ' test files with no errors');
+        html.push('<ul>');
+        for (var i = 0; i < files.length; i++) {
+            var src = files[i],
+                app = new LzTestApplication(src);
+            html.push('<li><a href="', src, '">', app.name, '</a></li>');
+        }
+        html.push('</ul>');
+        $('body').append('<div id="file-list"></div>');
+        $('#file-list').html(html.join(''));
+    },
+
+    failed: function(message) {
+        this.status(message || 'failed');
+        $('body').removeClass('running').addClass('failed');
+        this.current
+            ? $('body').prepend(['<a href="', this.current.url, '">',
+                                 this.current.url, '</a>'].join(''))
+            : this.message(message);
+    },
+
+    message: function(message) {
+        $('body').append('<div class="status"></div>');
+        $('body .status').text(message);
+    },
+
+    status: function(message) {
+        console.info(message);
+        document.title = 'autotest: ' + message;
+    },
+
+    load: function(file) {
+        this.unload();
+        var app = this.current = new LzTestApplication(file);
+        this.status(['running ', app.url,
+                     ' (', (this.files.length - this.remaining.length),
+                     '/', this.files.length, ')'].join(''));
+        app.load();
+    },
+
+    unload: function() {
+        this.current && this.current.unload();
+        this.current = null;
+    },
+
+    reportFailureCount: function(count) {
+        var url = this.current.url;
+        console.info('finished', this.current.name, 'with', count, 'failures');
+        count
+            ? this.failed(url + ' failed')
+            : this.runNext();
+    }
+}
+
+function LzTestApplication(url) {
+    this.url = url;
+    this.name = (url.replace(/\.lzx$/, '')
+                 .replace(/^test-/, '')
+                 .replace(/-local$/, '')
+                 .replace(/-(\w)/, function(_,s) {return ' '+s.toUpperCase()})
+                 .capitalize()
+                );
+}
+
+LzTestApplication.prototype = {
+    load: function() {
+        if (LzTestRunner.skip)
+            return gRunner.processFailureCount(0);
+        var src = this.url + '?lzt=swf';
+        var so = new SWFObject(src, 'lzapp', '100%', '100%', '8', '#FFFFFF');
+        $('body').append('<div id="applet">Loading ' + src + '</div>');
+        so.addParam('allowScriptAccess', 'always');
+        so.write('applet');
+        var self = this;
+        this.suiteCount = null;
+        window.suiteDone = function() { self.processLogMessage.apply(self, arguments); }
+    },
+
+    unload: function() {
+        $('#applet').remove();
+    },
+
+    processLogMessage: function(message, suiteCount) {
+        var match = message.match(/failures:\s*(\d+)/),
+            failures = match && parseInt(match[1]);
+        if (!match) {
+            gRunner.failed(this.url + ' sent invalid message: ' + message);
+            this.unload();
+            return;
+        }
+        if (this.suiteCount == null)
+            this.suiteCount = suiteCount;
+        if (failures || --this.suiteCount == 0)
+            gRunner.reportFailureCount(failures)
+    }
+}
+
+function suiteDone(message) {
+    var errorMessage = 'suiteDone called before LzTestAppliction.load is called';
+    window.console && console.error
+        ? console.error(errorMessage)
+        : alert(errorMessage);
+}
+
+String.prototype.capitalize = function() {
+    return this.slice(0,1).toUpperCase() + this.slice(1);
+}
+
+
+===== src/lzspec.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Released under the MIT License. */
+
+JSSpec.define('send', function(sender, name) {
+    Mock.expectEvent.apply(Mock, arguments);
+});
+
+// OL 3.4 compatibility
+Test.addProperty != Object.addProperty
+    || (Test.addProperty = function(name, value) {this.prototype[name] = value});
+
+TestCase.addProperty('calling', function(target, name) {
+    return JSSpec.calling.apply(JSSpec, arguments).set('testCase', this);
+});
+
+TestCase.addProperty('constructing', function(klass) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return this.calling(makeConstructor.apply(klass, args));
+    function makeConstructor() {
+        switch (arguments.length) {
+        case 0:
+            return function() {return new klass}
+            break;
+        case 1:
+            return function() {new klass(arguments[0])}
+            break;
+        default:
+            Debug.error('unimplemented constructor arity:', arguments.length-1)
+        }
+    }
+});
+
+TestCase.addProperty('expect', function(value) {
+    return ExpectValue(value, this);
+});
+
+TestCase.addProperty('value', function(value) {
+    return ExpectValue(value, this);
+});
+
+TestCase.addProperty('captureEvent', function(sender, eventName) {
+	var delegate = new LzDelegate({run:function() {
+        holder.called = true;
+	    holder.value = arguments[0];
+	}}, 'run', sender, eventName),
+	holder = {called:true, unregister:function(){delegate.unregisterAll()}};
+	return holder;
+});
+
+TestCase.prototype.expect.event = function(sender, eventName) {
+    Mock.exectEvent(sender, eventName);
+}
+
+function ExpectValue(value, testCase, context) {
+    var options = {};
+    if (arguments.length < 3)
+        context = [];
+    return Fluently.make(function(define) {
+        define.synonym('should');
+        define.synonym('be');
+        define.modifier.dictionary(options);
+        define.modifier('not');
+        define('and').sets(options, 'not').to(false);
+        define('equal', function(expected) {
+            if (options.not) {
+                return Expect.value(expected, value, function(){})
+                    ? fail(value, 'should not equal', expected)
+                    : success();
+            } else {
+                Expect.value(expected,
+                             typeof value == 'undefined' ? undefined : value,
+                             fail)
+                    && success();
+            }
+        }),
+        define('contain', function(item) {
+            options.not
+                ? testCase.assertNotContains(value, item)
+                : testCase.assertContains(value, item);
+        }),
+        define('include', function(properties) {
+            var failed = false;
+            for (var name in properties) {
+                if (value[name] == undefined)
+                    f(value, 'does not include', name);
+                else
+                    Expect.value(properties[name], value[name], function() {
+                        arguments = Array.prototype.concat.call(arguments,
+                                                                'at', name);
+                        f.apply(null, arguments);
+                    });
+            }
+            if (options.not)
+                failed
+                ? success()
+                : fail(value, 'should not include', properties);
+            function f() {
+                failed = true;
+                options.not || fail.apply(null, arguments);
+            }
+        });
+        define('property', function(propertyName) {
+            return ExpectValue(value[propertyName], testCase,
+                               ['property', propertyName, context ? ' in ' : ''].
+                               concat(context));
+        });
+        define('a', function(klassOrType) {
+            var result = typeof value == klassOrType || value instanceof klassOrType;
+            options.not
+                ? testCase.assertFalse(result, klassOrType)
+                : testCase.assertTrue(result, klassOrType);
+        });
+        define.synonym('an', 'a');
+    });
+    function fail() {
+        if (context.length)
+            arguments = Array.prototype.concat.call(arguments, context);
+        arguments = Mock._combineAdjacentStrings(arguments);
+        Debug.error.apply(Debug, arguments);
+        testCase && testCase.fail.call(testCase, arguments.join(' '));
+    }
+    function success() {
+        testCase.assertTrue(true);
+    }
+}
+
+
+===== src/fluently.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Released under the MIT License. */
+
+var Fluently = {
+    // returns a new object initialized by `fn`.  `fn` is passed a single
+    // argument `define` which defines chainable methods on the object.
+    make:function(fn) {
+        var host = {},
+            finalizers = [],
+            modifiers;
+
+        define.alias = function(target, source) {
+            path(target).set(host[source]);
+        }
+        define.synonym = function(target, source) {
+            if (arguments.length < 2)
+                host[target] = host;
+            else
+                path(target).set(host[source]);
+        }
+        define.empty = function(name) {
+            host[name] = host;
+        }
+        define.modifier = function(name) {
+            modifiers[name] = false;
+            defineSetter(name, modifiers, name, true);
+        }
+        define.modifier.dictionary = function(object) {
+            modifiers = object;
+        }
+
+        fn(define);
+        for (var i = 0; i < finalizers.length; i++)
+            finalizers[i]();
+        return host;
+
+        function define(name, fn) {
+            if (arguments.length > 1) {
+                path(name).set(function() {
+                    var value = fn.apply(this, arguments);
+                    return typeof value == 'undefined' ? host : value;
+                });
+            } else {
+                return {
+                    sets:function(object, propertyName, value) {
+                        if (arguments.length > 2)
+                            defineSetter(name, object, propertyName, value);
+                        return {
+                            to:function(value) {
+                                defineSetter(name, object, propertyName, value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        function path(name) {
+            var target = host;
+            if (name.indexOf('.') >= 0) {
+                var components = name.split('.');
+                while (components.length > 1) {
+                    var step = components.shift();
+                    target = target[step] = target[step] || {};
+                }
+                name = components[0];
+            }
+            return {target:target, name:name,
+                    get:function() {return target[name]},
+                    set:function(value) {target[name] = value}}
+        }
+        function defineSetter(methodName, object, propertyName, value) {
+            host[methodName] = makeSetter(function() {
+                object[propertyName]=value;
+            });
+        }
+        // returns an object that is like host, except that all of its functions
+        // call `before` first
+        function makeSetter(before) {
+            var modifier = {};
+            finalizers.push(function() {
+                for (var propertyName in host) {
+                    var value = host[propertyName];
+                    if (value == host)
+                        value = modifier;
+                    else if (typeof value == 'function')
+                        value = adviseBefore(value, before);
+                    modifier[propertyName] = value
+                }
+            });
+            return modifier;
+        }
+        // returns a function equivalent to `fn`, except that `before`
+        // is called first
+        function adviseBefore(fn, before) {
+            return function() {
+                before.apply(this, arguments);
+                return fn.apply(this, arguments);
+            }
+        }
+    }
+};
+
+
+===== src/jsspec.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Released under the MIT License. */
+
+var JSSpec = {
+    define:function() {
+        this.definitions.add.apply(this.definitions, arguments);
+    }
+}
+
+JSSpec.definitions = {
+    definitions:[],
+
+    add:function(name, fn) {
+        this.definitions.push([name, fn]);
+    },
+
+    defineWith:function(define, options) {
+        var definitions = this.definitions;
+        for (var i = 0; i < definitions.length; i++) {
+            var defn = definitions[i];
+            define(defn[0], guard(defn[1]));
+        }
+        function guard(fn) {
+            return function() {
+                if (options.positive)
+                    return fn.apply(this, arguments);
+            }
+        }
+    }
+}
+
+//JSSpec.define.negative = function
+
+JSSpec.Runner = function(target, name) {
+    var fn = target,
+        args = Array.prototype.slice.call(arguments, 2);
+    if (arguments.length > 1) {
+        target[name] || Debug.error('unknown method:', name);
+        fn = function() { return target[name].apply(target, args) }
+    }
+    var tests = [],
+        options = {positive:true};
+    return {
+        run:function() {
+            var value = fn();
+            Mock.verify(options.testCase);
+            Mock.verifyEvents(fail);
+            runTests();
+            return value;
+        },
+        call:function(target, name) {
+            if (!options.positive)
+                return;
+            var expector = target.mock.expects,
+                args = Array.prototype.slice.call(arguments, 2);
+            expector[name] || Debug.error("unknown method:", name);
+            expector[name].apply(expector, args);
+        },
+        change:function(target, property) {
+            tests.push({target:target, property:property,
+                        value:target[property], run:runTest,
+                        equals:!options.positive});
+        },
+        increment:function(target, property) {
+            tests.push({target:target, property:property,
+                        value:target[property]+1, run:runTest,
+                        equals:options.positive});
+        },
+        _options:options
+    }
+
+    function fail() {
+        options.testCase.fail(Array.prototype.join.call(arguments, ' '));
+    }
+    function defineTest(target, property, expected, predicate) {
+    }
+    function runTests() {
+        for (var i = 0; i < tests.length; i++)
+            tests[i].run();
+    }
+    function runTest() {
+        var testCase = options.testCase;
+        (this.equals ? testCase.assertEquals : testCase.assertNotEquals).call(
+            testCase, this.value, this.target[this.property], this.property);
+    }
+}
+
+JSSpec.calling = function(target, name) {
+    var runner = JSSpec.Runner.apply(JSSpec.Runner, arguments),
+        options = runner._options,
+        runner = Fluently.make(function(define) {
+            define('run', runner.run),
+            define('call', runner.call);
+            define('change', runner.change);
+            define('increment', runner.increment);
+            define('not').sets(options, 'positive').to(false);
+            define('but').sets(options, 'positive').to(true);
+            define.alias('now', 'run');
+            define.empty('should');
+            define.empty('and');
+            JSSpec.definitions.defineWith(define, options);
+        });
+    runner.set = function(key, value) { options[key] = value; return runner; }
+    return runner;
+}
+
+TestCase.addProperty('calling', function() {
+    return JSSpec.calling.apply(JSSpec, arguments).set('testCase', this);
+});
+
+
+===== src/lzunit-extensions.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Available under the MIT License. */
+
+// OL 3.4 compatibility
+Test.addProperty != Object.addProperty
+    || (Test.addProperty = function(name, value) {this.prototype[name] = value});
+
+Array['contains'] || (Array.contains = function(array, value) {
+    for (var ix = 0; ix < array.length; ix++)
+        if (array[ix] == value)
+            return true;
+    return false;
+});
+
+/*
+ * New assertions
+ */
+
+Test.addProperty('assertNotEquals', function(expected, value, message) {
+    if (expected == value) {
+        this.fail(this.format(jsTrue(message) ? message :  "==",
+                              expected, value));
+    }
+    canvas.setAttribute('runTests', canvas.runTests + 1)
+});
+
+Test.addProperty('assertContains', function(collection, value, message) {
+    if (!Array.contains(collection, value)) {
+        this.fail(this.format(jsTrue(message) ? message :  "contains",
+                              collection, value));
+    }
+    canvas.setAttribute('runTests', canvas.runTests + 1)
+});
+
+Test.addProperty('assertNotContains', function(collection, value, message) {
+    if (Array.contains(collection, value)) {
+        this.fail(this.format(jsTrue(message) ? message :  "does not contain",
+                              collection, value));
+    }
+    canvas.setAttribute('runTests', canvas.runTests + 1)
+});
+
+Test.addProperty('assertSameDate', function(expected, actual, message) {
+    if (expected instanceof Date && actual instanceof Date
+        && expected/1 == actual/1)
+        expected = actual;
+    this.assertSame(expected, actual, message);
+});
+
+Test.addProperty('assertFasterThan', function(expected, actual, message) {
+    actual <= expected ||
+        this.fail([message || '', message && ': ' || '',
+                   actual, "ms not < ", expected, "ms"].join(''));
+    canvas.setAttribute('runTests', canvas.runTests + 1)
+});
+
+
+/*
+ * Pending
+ */
+
+Test.addProperty('pending', function(message) {
+    Debug.write(['pending'].concat(arguments));
+});
+
+
+/*
+ * Test case selection
+ */
+
+TestSuite.prototype.runWithoutRestriction =
+    TestSuite.prototype.run;
+
+TestSuite.addProperty('run', function() {
+    this.selectTests();
+    this.runWithoutRestriction.apply(this, arguments);
+});
+
+TestSuite.addProperty('selectTests', function() {
+    var methodName = global['testCase'] || null;
+    if (!methodName)
+        return;
+    if (methodName.indexOf('test') != 0)
+        methodName = 'test' + methodName.slice(0,1).toUpperCase() + methodName.slice(1);
+    Debug.write("Only running", methodName);
+    for (v in this.tests) {
+        var tc = this.tests[v] || null;
+        if (tc) {
+            var selected = [];
+            for (var i in tc)
+                tc[i] == methodName && selected.push(tc[i]);
+            this.tests[v] = selected;
+        }
+    }
+});
+
+
+===== src/lztimer-browser.js =====
+/* Copyright 2008 by Oliver Steele.  Available under the MIT License. */
+
+var TimingReporter = {
+    timings: {},
+
+    handleMessage: function(operation, name, time) {
+        switch (operation) {
+        case "elapsed":
+            name = name.replace(/^time(.)/, function(_,s) {
+                return s.toLowerCase();
+            });
+            (this.timings[name] = this.timings[name]||[]).push(time);
+            this.updateDisplay();
+            break;
+        }
+    },
+
+    updateDisplay: function() {
+        var self = this;
+        if (!window.$)
+            return this.thread = this.thread || setTimeout(function() {self.updateDisplay()}, 500);
+        $('#results').remove();
+        var html = ['<div id="results" style="">',
+            '<table><tr><th>Test</th><th>Time (&plusmn;&sigma;)</th><th>Trials</th><th>Data</th></tr>'];
+        function toSeconds(value) {
+            return String(value).replace(/(\.\d\d).*/, '$1') + 's';
+        }
+        for (var name in this.timings) {
+            var times = this.timings[name];
+            html.push('<tr><td class="function-name">', name,
+                      '</td><td class="time">',
+                      toSeconds(times.mean()),
+                      '&plusmn;',
+                      toSeconds(times.stddev()),
+                      '</td><td class="trials">',
+                      times.length,
+                      '</td><td class="data">',
+                      times.map(toSeconds).join(', '),
+                      '</td></tr>');
+        }
+        html.push('</table></div>');
+        $('body').prepend(html.join(''));
+        //$('object, embed').css({height:'50%'});
+    }
+};
+
+Array.prototype.map = function(fn) {
+    var len = this.length,
+        result = new Array(len);
+    for (var ix = 0; ix < len; ix++)
+        if (ix in this)
+            result[ix] = fn(this[ix], ix);
+    return result;
+};
+
+Array.prototype.sum = function() {
+    var sum = 0;
+    for (var ix = 0; ix < this.length; ix++)
+        sum += this[ix];
+    return sum;
+};
+
+Array.prototype.mean = function() {
+    return this.sum() / this.length;
+};
+
+Array.prototype.stddev = function() {
+    var mean = this.mean(),
+        variance = 0;
+    for (var ix = 0; ix < this.length; ix++) {
+        var d = this[ix] - mean;
+        variance += d * d;
+    }
+    return Math.sqrt(variance);
+};
+
+(function(queue) {
+    receiveMessage = function() {TimingReporter.handleMessage.apply(TimingReporter, arguments)};
+    for (var ix = 0; ix < queue.length; ix++)
+        receiveMessage.apply(null, queue[ix]);
+})(window.receiveMessage&&receiveMessage.queue||[]);
+
+
+===== src/autorun-lz.js =====
+/* Copyright 2007-2008 by Oliver Steele.  Available under the MIT License. */
+
+// OL 3.4 compatibility
+TestSuite.addProperty != Object.addProperty
+    || (TestSuite.addProperty = function(name, value) {this.prototype[name] = value});
+TestSuite.prototype.sendLogDataWithoutBrowserJS =
+    TestSuite.prototype.sendLogData;
+
+TestSuite.addProperty('sendLogData', function(_, message) {
+    // OL 3.4
+    if (message instanceof XML)
+        message = 'failures: ' + message.firstChild.attributes.failures;
+    var suiteCount = 0;
+    for (var i = 0; i < canvas.subviews.length; i++)
+        if (canvas.subviews[i] instanceof TestSuite)
+            suiteCount++;
+    var expr = 'window.suiteDone&&suiteDone(' + quote(message) +
+        ',' + suiteCount + ')';
+    LzBrowser.exec(expr);
+    this.sendLogDataWithoutBrowserJS.apply(this, arguments);
+    // This does just enough quoting to be useful here
+    function quote(s) {
+        return '"' + s.replace('"', '\\"').replace('\n', '\\n') + '"';
+    }
+});
+
+// Execute javascript in the browser.  Throttled to avoid race
+// condition with MSIE.
+LzBrowser.exec = function(expr) {
+    var nextTime = arguments.callee['nextTime'] || 0,
+        now = (new Date).getTime();
+    if (now < nextTime)
+        return setTimeout(function(){LzBrowser.exec(expr)},
+                          nextTime - now);
+    _root.getURL('javascript:(function(){'+expr+'})()');
+    arguments.callee.nextTime = now + 100;
+}
+
+// The following is from lzosutils:
+
+// This is missing from ActionScript.
+//
+// +pattern+ is required to be a string; there's therefore no point in
+// accepting a Function for +sub+.
+String.prototype['replace'] || (String.prototype.replace = function(pattern, sub) {
+    var splits = this.split(pattern),
+        segments = new Array(splits.length*2-1);
+    for (var i = 0, dst = 0; i < splits.length; i++) {
+        i && (segments[dst++] = sub);
+        segments[dst++] = splits[i];
+    }
+    return segments.join('');
+})
+
+LzBrowser.setDefaultHTMLTitleToLoadURL = function() {
+    var name = LzBrowser.getLoadURL().split('?')[0].split('/').reverse()[0];
+    LzBrowser.exec('document.title=="OpenLaszlo Application"&&(document.title="'
+                   + name + '")');
+}
+LzBrowser.setDefaultHTMLTitleToLoadURL();
+
+
+===== test/test-expects.lzx =====
+<!-- Copyright 2008 by Oliver Steele.  Available under the MIT License. -->
+<canvas debug="true">
+  <include href="../src/library.lzx"/>
+
+  <TestSuite>
+    <TestCase>
+      <method name="testEquals"><![CDATA[
+        value(1).should.equal(1);
+        value(1).should.not.equal(2);
+      ]]></method>
+
+      <method name="testArrayEquality"><![CDATA[
+        value([1,2]).should.equal([1,2]);
+        value([1,2]).should.not.equal([1]);
+        value([1,2]).should.not.equal([1,3]);
+        value([1,2]).should.not.equal([1,2,3]);
+      ]]></method>
+
+      <method name="testDateEquality"><![CDATA[
+        var d1 = new Date,
+            d2 = new Date(d1.getTime()),
+            d3 = new Date(d1.getTime() + 60*1000);
+        //value(d1).should.equal(d2);
+        value(d1).should.not.equal(d3);
+      ]]></method>
+
+      <method name="testContains"><![CDATA[
+        value([1,2]).should.contain(1);
+        value([1,2]).should.not.contain(3);
+      ]]></method>
+
+      <method name="testObjectProperties"><![CDATA[
+        value({a:1}).property('a').should.equal(1);
+        value({a:1}).property('a').should.not.equal(2);
+        value({a:1, b:2}).should.equal({a:1, b:2});
+        value({a:1, b:2}).should.not.equal({a:1, b:3});
+        value({a:1, b:2}).should.include({a:1});
+        value({a:1, b:2}).should.not.include({a:2});
+        value({a:1, b:2}).should.not.include({c:1});
+      ]]></method>
+
+      <method name="testInstanceOf"><![CDATA[
+        value([]).should.be.an(Array);
+        value(new Date).should.be.a(Date);
+	value(function(){}).should.be.a(Function);
+        value(new Date).should.not.be.an(Array);
+        function C() {}
+        value(new C).should.be.a(C);
+      ]]></method>
+
+      <method name="testTypeOf"><![CDATA[
+        value(1).should.be.a('number');
+        value('string').should.be.a('string');
+        value(function(){}).should.be.a('function');
+        value(null).should.be.a('null');
+        value(true).should.be.a('boolean');
+      ]]></method>
+
+      <method name="testFailures"><![CDATA[
+        withExpectedFailures(function() {
+
+        value(1).should.equal(2);
+        value({a:1}).property('a').should.equal(2);
+        value({a:1, b:2}).property('b').should.equal(1);
+        value({a:1}).property('b').should.equal(2);
+
+        // Object
+        value({a:1, b:2}).should.equal({a:1, b:1});
+        value({a:1}).should.equal({a:1, b:2});
+        //value({a:1, b:2}).should.equal({a:1});
+
+        // Array
+        value([1,3]).should.equal([1,2]);
+        value([1,2]).should.equal([1]);
+        value([1,2]).should.equal([1,2,3]);
+
+        // Date
+        var d1 = new Date, d2 = new Date(d1.getTime()+10);
+        value(d1).should.equal(d2);
+
+        });
+      ]]></method>
+
+      <method name="withExpectedFailures" args="fn"><![CDATA[
+        var savedMethods = {},
+            savedDebugError,
+            failureCount = 0;
+        saveMethods.call(this);
+        fn.call(this);
+        restoreMethods.call(this);
+        if (failureCount == 0)
+          this.fail("Expected failure was not signalled");
+
+        function saveMethods() {
+          savedDebugError = Debug.error;
+          Debug.error = Debug.write;
+          savedMethods.fail = this.fail;
+          this.fail = function() {
+            Debug.write('Expected failure was called:', arguments);
+            failureCount += 1;
+          }
+          for (var methodName in this) {
+            var method = this[methodName];
+            if (methodName.indexOf('assert') == 0 && typeof method == 'function') {
+              savedMethods[methodName] = method;
+              this[methodName] = makeMethod(methodName, method);
+            }
+          }
+        }
+        function restoreMethods() {
+          Debug.error = savedDebugError;
+          for (var methodName in savedMethods)
+            this[methodName] = savedMethods[methodName];
+        }
+        function makeMethod(methodName, method) {
+          return function() {
+            var count = failureCount;
+            method.apply(this, arguments);
+            if (count == failureCount)
+              savedDebugError.call(Debug, methodName, 'did not call fail');
+          }
+        }
+      ]]></method>
+    </TestCase>
+  </TestSuite>
+</canvas>
+
+
+===== test/run-timer.lzx =====
+<!-- Copyright 2008 by Oliver Steele.  Available under the MIT License. -->
+<canvas>
+  <include href="lzunit"/>
+  <script src="../src/autorun-lz.js"/>
+  <include href="../src/lztimer.lzx"/>
+
+  <script>
+    Timer.javascriptIncludesBase = "../lib/";
+    Timer.lztestkitIncludesBase = "../src/";
+  </script>
+
+  <Timer>
+    <method name="timeEmpty"/>
+
+    <method name="timeIteration"><![CDATA[
+      for (var ix = 100*1000; --ix > 0; )
+        ;
+    ]]></method>
+
+    <method name="timeSetTimeout" args="done"><![CDATA[
+      setTimeout(done, 200);
+      return false;
+    ]]></method>
+
+    <method name="timeWithSuspension" args="done"><![CDATA[
+      var suspension = Timer.suspend();
+      setTimeout(function() {
+        suspension.resume();
+        done();
+      }, 200);
+      return false;
+    ]]></method>
+  </Timer>
+</canvas>
+
+
+===== test/test-lzunit-async-two-suites.lzx =====
+<!-- Copyright 2007-2008 by Oliver Steele.  Released under the MIT License. -->
+<canvas debug="true">
+  <include href="../src/lzunit-async.lzx"/>
+  <script src="../src/lzunit-extensions.js"/>
+  <script src="../src/autorun-lz.js"/>
+
+  <TestSuite>
+    <handler name="onsuitefinish">
+      Debug.write('f1');
+    </handler>
+
+    <AsyncTestCase>
+      <method name="setUp" args="c">
+        Debug.write('s1');
+      </method>
+      
+      <method name="testImmediate" args="c">
+        Debug.write('m1');
+        setTimeout(c(function() {
+          Debug.write('m1.2');
+        }), 100);
+      </method>
+    </AsyncTestCase>
+  </TestSuite>
+
+  <TestSuite>
+    <handler name="onsuitefinish">
+      Debug.write('f2');
+    </handler>
+
+    <AsyncTestCase>
+      <method name="setUp" args="c">
+        Debug.write('s2');
+      </method>
+      
+      <method name="testImmediate" args="c">
+        Debug.write('m2');
+      </method>
+    </AsyncTestCase>
+  </TestSuite>
+</canvas>
+
+===== test/test-lzunit-extensions.lzx =====
+<!-- Copyright 2007 by Oliver Steele.  Available under the MIT License. -->
+<canvas debug="true">
+  <include href="lzunit"/>
+  <script src="../src/lzunit-extensions.js"/>
+  
+  <TestSuite>
+    <method name="setUp">
+      Debug.write("The following two methods are expected to fail.");
+    </method>
+    
+    <TestCase>
+      <method name="testFasterThan">
+        this.assertFasterThan(100, 50);
+        this.assertFasterThan(100, 100);
+        this.assertFasterThan(100, 50, 'message');
+      </method>
+      
+      <method name="testNotFasterThan">
+        this.assertFasterThan(100, 200);
+        this.assertFasterThan(100, 200, 'message');
+      </method>
+    </TestCase>
+  </TestSuite>
+</canvas>
+
+
+
+===== test/test-mocks.lzx =====
+<!-- Copyright 2008 by Oliver Steele.  Available under the MIT License. -->
+<canvas debug="true">
+  <include href="../src/library.lzx"/>
+
+  <TestSuite>
+    <TestCase>
+      <method name="setUp"><![CDATA[
+        function C() {}
+        var I = function(x){return x};
+        C.prototype = {a:I, b:I, c:I};
+        this.C = C;
+      ]]></method>
+      
+      <method name="testReturnValue"><![CDATA[
+        var o = mock(this.C);
+        
+        o.mock.expects.a(1).and.returns(2);
+        var r = o.a(1);
+        o.mock.verify();
+        assertEquals(2, r);
+      ]]></method>
+      
+      <method name="testCallback"><![CDATA[
+        var o = mock(this.C);
+        
+        o.mock.expects.a(Function).and.calls.back(1);
+        var r = undefined;
+        o.a(function(x) { r = x });
+        o.mock.verify();
+        assertEquals(1, r);
+      ]]></method>
+      
+      <method name="testDeferredCallback"><![CDATA[
+        var o = mock(this.C);
+        
+        var callback = o.mock.expects.a(Function).and.captures.callback();
+        var r = null;
+        o.a(function(x) { r = x });
+        o.mock.verify();
+        assertEquals(null, r);
+        callback.call(1);
+        assertEquals(1, r);
+      ]]></method>
+    </TestCase>
+  </TestSuite>
+</canvas>

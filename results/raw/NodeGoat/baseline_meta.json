@@ -1,0 +1,8 @@
+{
+  "repo_name": "NodeGoat",
+  "model": "gpt-5",
+  "wall_clock_sec": 32.6,
+  "input_tokens": 59812,
+  "output_tokens": 2850,
+  "file_dump_chars": 160053
+}

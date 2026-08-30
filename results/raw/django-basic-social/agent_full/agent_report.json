@@ -1,0 +1,115 @@
+{
+  "repo_name": "django-basic-social",
+  "risk_score": 82,
+  "effort_multiplier": 2.0,
+  "summary": "Legacy Django project with uninitialized git submodules, missing dependency manifests, and configuration mismatches. The codebase appears targeted at very old Django (pre-1.2) and includes outdated patterns (execute_manager, django.conf.urls.defaults). Key app directories are declared as git submodules but are empty in this copy, and settings reference a 'basic.*' package that is not present at the repo root. No tests, no CI, and no license file are present. Linting also reports syntax errors in a vendored BeautifulSoup.py. Build/run could not be verified in the sandbox due to missing Python, so runtime status is unknown. Expect substantial environment pinning/modernization and repo hygiene work before feature work.",
+  "red_flags": [
+    {
+      "title": "Git submodules required by project",
+      "severity": "high",
+      "evidence": "[submodule \"profiles\"]\n\tpath = profiles\n\turl = git://github.com/myles/django-basic-profiles.git",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".gitmodules:1-3"
+    },
+    {
+      "title": "Project settings hard-code non-existent 'basic.*' module paths",
+      "severity": "high",
+      "evidence": "66:ROOT_URLCONF = 'basic.urls'\n82:\t# 'basic.blog', # Django Basic Blog\n83:\t'basic.books', # Django Basic Library (Books)\n84:\t'basic.movies', # Django Basic Library (Movies)\n85:\t'basic.music', # Django Basic Library (Music)\n86:\t'basic.people', # Django Basic People\n87:\t'basic.profiles', # Django Basic Profiles",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py:66,82-87"
+    },
+    {
+      "title": "Top-level 'basic' package directory not present at repo root",
+      "severity": "medium",
+      "evidence": "\"signals\": {\"has_ci_config\": false, \"has_license\": false, \"has_tests_dir\": false, \"readme_word_count\": 37, \"large_files_over_50kb\": [\"BeautifulSoup.py\"]}",
+      "source": "tool_output",
+      "tool_call_id": "call_4ymLXFlw8m27nqXKNHnrOuq5",
+      "file_ref": null
+    },
+    {
+      "title": "No dependency manifest; dependency audit not attempted",
+      "severity": "medium",
+      "evidence": "No package-lock.json, requirements.txt, pyproject.toml, or setup.py found at repo root; dependency audit not attempted. Treat dependency risk as unverified.",
+      "source": "tool_output",
+      "tool_call_id": "call_nIPPNxvSBA7svtpN0wyy7ZSy",
+      "file_ref": null
+    },
+    {
+      "title": "Outdated Django patterns likely incompatible with modern Django",
+      "severity": "medium",
+      "evidence": "from django.core.management import execute_manager",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "manage.py:2"
+    },
+    {
+      "title": "Outdated URL import style (django.conf.urls.defaults)",
+      "severity": "low",
+      "evidence": "from django.conf.urls.defaults import *",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "urls.py:1"
+    },
+    {
+      "title": "Old-style database settings indicate very old Django",
+      "severity": "low",
+      "evidence": "12:DATABASE_ENGINE = 'sqlite3'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py:12"
+    },
+    {
+      "title": "No license file detected",
+      "severity": "medium",
+      "evidence": "\"has_license\": false",
+      "source": "tool_output",
+      "tool_call_id": "call_4ymLXFlw8m27nqXKNHnrOuq5",
+      "file_ref": null
+    },
+    {
+      "title": "No tests directory detected",
+      "severity": "medium",
+      "evidence": "\"has_tests_dir\": false",
+      "source": "tool_output",
+      "tool_call_id": "call_4ymLXFlw8m27nqXKNHnrOuq5",
+      "file_ref": null
+    },
+    {
+      "title": "No CI configuration detected",
+      "severity": "low",
+      "evidence": "\"has_ci_config\": false",
+      "source": "tool_output",
+      "tool_call_id": "call_4ymLXFlw8m27nqXKNHnrOuq5",
+      "file_ref": null
+    },
+    {
+      "title": "Sparse documentation (very short README)",
+      "severity": "low",
+      "evidence": "\"readme_word_count\": 37",
+      "source": "tool_output",
+      "tool_call_id": "call_4ymLXFlw8m27nqXKNHnrOuq5",
+      "file_ref": null
+    }
+  ],
+  "clarifying_questions": [
+    "What Python and Django versions should this project target? Is staying on a legacy Django acceptable, or should we modernize to a supported LTS (e.g., 3.2/4.x)?",
+    "Can you provide a requirements.txt/pyproject and a lock file (or the exact pip freeze) used in production?",
+    "Should we initialize and pin the git submodules in this repo, or replace them with PyPI packages? If submodules are required, which exact commits should we use?",
+    "Is the intended project/package name actually 'basic'? If so, should we reorganize the repo into a proper Python package (e.g., a basic/ directory) and fix ROOT_URLCONF/INSTALLED_APPS?",
+    "Is the vendored BeautifulSoup.py intended to be used? If so, which version and license applies, and do we have permission to redistribute it?",
+    "Are there any existing tests elsewhere or expectations to add a test suite? What\u2019s the required test coverage?",
+    "What environments must this run in (OS, Python version, DB, web server)? Any deployment constraints or existing infrastructure?",
+    "Do you have production data, fixtures, or migration expectations for the sqlite database file (Basic.db)?",
+    "(self-check demoted -- evidence unverifiable) Build could not be verified: Python runtime missing in sandbox",
+    "(self-check demoted -- evidence unverifiable) Submodule directories are empty in this copy (must init/update submodules)",
+    "(self-check demoted -- evidence unverifiable) Linting reports syntax errors in vendored BeautifulSoup.py"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Multiple objective blockers: the repo depends on uninitialized git submodules; settings reference a 'basic' package that does not exist at the repo root; there is no dependency manifest; and linting shows syntax errors in a vendored BeautifulSoup.py. The code targets very old Django APIs that will not run on modern Django without refactors. Build execution could not be verified in the sandbox due to no Python runtime, so runtime health and tests are unknown. Given these factors, the project is high-risk without upfront stabilization, environment pinning, and likely reorganization/modernization.",
+  "build_status": "unknown",
+  "test_status": "not_attempted",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

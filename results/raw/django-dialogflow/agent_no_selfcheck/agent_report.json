@@ -1,0 +1,71 @@
+{
+  "repo_name": "django-dialogflow",
+  "risk_score": 75,
+  "effort_multiplier": 2.0,
+  "summary": "This repository is a small Django app providing a Dialogflow-based chat agent. However, it targets a very old, end-of-life stack (Django 1.11, Python 2.7/3.4/3.5) and could not be installed or tested in a modern Python 3.11 environment. Dependency auditing failed to run, and test execution failed due to missing Django (dependencies could not be installed). Expect significant modernization work (framework upgrade, dependency updates, CI refresh) before reliable development can proceed.",
+  "red_flags": [
+    {
+      "title": "Dependency audit failed to run (pip-audit error)",
+      "severity": "high",
+      "evidence": "ModuleNotFoundError: No module named 'requests'\nERROR:pip_audit._cli:Failed to install packages: ['/tmp/tmpsf75p4u_/bin/python3', '-m', 'pip', 'install', '--no-input', '--keyring-provider=subprocess', '--dry-run', '--report', '/tmp/tmpau4_k9lc/tmps0wav3ex', '-r', 'requirements.txt']",
+      "source": "tool_output",
+      "tool_call_id": "functions.dependency_audit",
+      "file_ref": null
+    },
+    {
+      "title": "End-of-life Django version pinned",
+      "severity": "critical",
+      "evidence": "Django>=1.11.5,<1.11.6",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt:1"
+    },
+    {
+      "title": "Build/install could not be verified in sandbox (PEP 668 externally managed environment)",
+      "severity": "medium",
+      "evidence": "error: externally-managed-environment",
+      "source": "tool_output",
+      "tool_call_id": "functions.run_command.pip_install_requirements",
+      "file_ref": null
+    },
+    {
+      "title": "Tests failed to run due to missing Django (dependencies not installed)",
+      "severity": "medium",
+      "evidence": "ModuleNotFoundError: No module named 'django'",
+      "source": "tool_output",
+      "tool_call_id": "functions.run_command.manage_py_test",
+      "file_ref": null
+    },
+    {
+      "title": "Repository explicitly targets obsolete Python versions",
+      "severity": "medium",
+      "evidence": "'Programming Language :: Python :: 2.7'\n'Programming Language :: Python :: 3.4'\n'Programming Language :: Python :: 3.5'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "setup.py:52-55"
+    },
+    {
+      "title": "Outdated CI configuration (Travis CI targeting Python 2.7/3.4/3.5)",
+      "severity": "low",
+      "evidence": "python:\n  - '2.7'\n  - '3.4'\n  - '3.5'\nscript:\n  - python django_dialogflow/manage.py test django_dialogflow.tests",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".travis.yml:4-6,13"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python and Django versions must this project support in production? Are you open to upgrading to a currently supported Django LTS (e.g., 3.2/4.2) or latest stable?",
+    "Is the pin to Django 1.11.5 strictly required for compatibility, or can we relax/upgrade it?",
+    "Do you have a known-good development environment (Python version, OS) where this currently runs? If so, please share details or a Dockerfile.",
+    "Is replacing dialogflow-lite with the official Google Cloud Dialogflow client acceptable, if needed for compatibility/security?",
+    "Do you have CI/CD requirements and a preferred provider (GitHub Actions, GitLab CI, etc.)?",
+    "Are there additional tests not committed here, or should part of the scope include adding/modernizing tests?",
+    "Do you have any security or compliance constraints (e.g., minimum supported versions, CVE posture) that should drive dependency updates?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Core framework dependency is end-of-life and pinned to a narrow, very old version, which is incompatible with modern Python. We could not install dependencies or run tests in the sandbox; the dependency audit also failed. Taking this on will likely require framework upgrades, dependency replacements, and CI modernization before feature work. If the client needs to stay on Django 1.11, work will require reproducing a legacy environment and accepting security risks. Proceed only if expectations align and time is budgeted for modernization and environment setup.",
+  "build_status": "failed",
+  "test_status": "failed",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

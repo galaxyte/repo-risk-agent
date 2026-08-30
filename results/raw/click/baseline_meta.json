@@ -1,0 +1,8 @@
+{
+  "repo_name": "click",
+  "model": "gpt-5",
+  "wall_clock_sec": 52.4,
+  "input_tokens": 36395,
+  "output_tokens": 3485,
+  "file_dump_chars": 160032
+}

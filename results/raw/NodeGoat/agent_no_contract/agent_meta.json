@@ -1,0 +1,11 @@
+{
+  "repo_name": "NodeGoat",
+  "model": "gpt-5",
+  "variant": "no_contract",
+  "turns_used": 15,
+  "wall_clock_sec": 263.6,
+  "input_tokens": 143473,
+  "output_tokens": 8495,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

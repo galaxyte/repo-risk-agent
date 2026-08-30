@@ -1,0 +1,84 @@
+{
+  "repo_name": "NodeGoat",
+  "risk_score": 82,
+  "effort_multiplier": 2.6,
+  "summary": "NodeGoat installs and the basic test task executes, but the codebase carries significant security and maintenance risk: npm audit reports 144 known vulnerabilities (including 38 critical, 66 high), secrets are committed (an RSA private key and a hardcoded ZAP API key), there is no configured modern linter, and the unit test task discovers no tests. Expect substantial effort to either maintain this as an intentionally vulnerable training app or to harden/modernize it for real use.",
+  "red_flags": [
+    {
+      "title": "Extensive known vulnerabilities in dependencies (38 critical, 66 high)",
+      "severity": "critical",
+      "evidence": "\"vulnerabilities\": {\n      \"info\": 0,\n      \"low\": 8,\n      \"moderate\": 32,\n      \"high\": 66,\n      \"critical\": 38,\n      \"total\": 144\n    }",
+      "source": "tool_output",
+      "tool_call_id": "functions.dependency_audit",
+      "file_ref": null
+    },
+    {
+      "title": "Private RSA key committed to repo",
+      "severity": "high",
+      "evidence": "-----BEGIN RSA PRIVATE KEY-----",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "artifacts/cert/server.key:1"
+    },
+    {
+      "title": "Hardcoded ZAP API key in development config",
+      "severity": "medium",
+      "evidence": "zapApiKey: \"v9dn0balpqas1pcc281tn5ood1\",",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "config/env/development.js:6"
+    },
+    {
+      "title": "Hardcoded ZAP API key in test config",
+      "severity": "medium",
+      "evidence": "zapApiKey: \"v9dn0balpqas1pcc281tn5ood1\",",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "config/env/test.js:6"
+    },
+    {
+      "title": "No unit tests discovered by the test task",
+      "severity": "medium",
+      "evidence": "No files to check...OK",
+      "source": "tool_output",
+      "tool_call_id": "run_command:npm_test",
+      "file_ref": null
+    },
+    {
+      "title": "Deprecated/unmaintained packages in use",
+      "severity": "medium",
+      "evidence": "npm WARN deprecated swig@1.4.2: This package is no longer maintained\nnpm WARN deprecated bcrypt-nodejs@0.0.3: bcrypt-nodejs is no longer actively maintained.",
+      "source": "tool_output",
+      "tool_call_id": "run_command:npm_ci",
+      "file_ref": null
+    },
+    {
+      "title": "No project linter configured (heuristic fallback only)",
+      "severity": "low",
+      "evidence": "No project-specific linter run; reporting line-count heuristic only.",
+      "source": "tool_output",
+      "tool_call_id": "functions.run_linter_or_complexity",
+      "file_ref": null
+    }
+  ],
+  "clarifying_questions": [
+    "What Node.js runtime/version(s) must this project support in development and production?",
+    "Is the goal to keep this as an intentionally vulnerable training app, or do you want it hardened for real users? This changes scope dramatically (dependency upgrades, code changes, threat mitigations).",
+    "How should secrets be handled? Are the committed ZAP API key and TLS private key strictly for local/demo use, and should they be removed/rotated?",
+    "Do you need CI to run end-to-end/security tests (Cypress/Selenium/ZAP)? If so, what environment (browsers/Chrome, MongoDB service) is available in CI/CD?",
+    "What MongoDB version and deployment target are expected, and are there existing production datasets or migrations to preserve?",
+    "Are there any coding standards or linting/formatting tools you require (ESLint/Prettier), and is introducing them in scope?",
+    "Is containerization (Docker) part of the deliverable, and do you have a preferred base image/runtime constraints?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Install completed, and the basic test task ran, but verified evidence shows major security and maintenance debt: a large number of critical/high vulnerabilities from npm audit; secrets committed in-repo; lack of unit tests; many deprecated libraries; and no modern linter. These factors increase uncertainty and rework. Proceeding is feasible, but only with clear scope on whether to harden/modernize or to keep the app intentionally vulnerable for training, and with budget for dependency and security remediation if hardening is required.",
+  "build_status": "passed",
+  "test_status": "passed",
+  "test_pass_rate": null,
+  "vulnerability_summary": {
+    "critical": 38,
+    "high": 66,
+    "medium": 32,
+    "low": 8
+  }
+}

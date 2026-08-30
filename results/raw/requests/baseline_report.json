@@ -1,0 +1,72 @@
+{
+  "repo_name": "requests",
+  "risk_score": 15,
+  "effort_multiplier": 1.15,
+  "summary": "Mature, widely-used HTTP client library with clear CI, typing, linting, and packaging configuration. Primary risks for a freelancer adopting or extending this codebase are environmental/organizational rather than code quality: strict Python version floor (3.10+), dependency upper bounds that could conflict with other project constraints, and an explicit upstream policy against accepting new feature requests. Overall low technical risk, with a few conditions to confirm about your target environment and scope.",
+  "red_flags": [
+    {
+      "title": "Requires Python 3.10 or newer",
+      "severity": "medium",
+      "evidence": "requires-python = \">=3.10\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "pyproject.toml"
+    },
+    {
+      "title": "Dependency constraints may conflict with other packages",
+      "severity": "medium",
+      "evidence": "dependencies = [\n    \"charset_normalizer>=2,<4\",\n    \"idna>=2.5,<4\",\n    \"urllib3>=1.26,<3\",\n    \"certifi>=2023.5.7\"\n]",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "pyproject.toml"
+    },
+    {
+      "title": "Upstream policy: not accepting feature requests",
+      "severity": "medium",
+      "evidence": "--comment \"As described in the template, Requests is not accepting feature requests\"",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".github/workflows/close-issues.yml"
+    },
+    {
+      "title": "Tests reference a repository file that must exist locally (requirements-dev.txt)",
+      "severity": "low",
+      "evidence": "with open(\"requirements-dev.txt\") as f:",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "tests/test_requests.py"
+    },
+    {
+      "title": "Targets experimental Python free-threading builds (beta) in classifiers",
+      "severity": "low",
+      "evidence": "\"Programming Language :: Python :: Free Threading :: 2 - Beta\",",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "pyproject.toml"
+    },
+    {
+      "title": "CI matrix includes dev and experimental interpreters (possible instability on bleeding-edge Pythons)",
+      "severity": "low",
+      "evidence": "python-version: [\"3.10\", \"3.11\", \"3.12\", \"3.13\", \"3.14\", \"3.14t\", \"3.15-dev\", \"pypy-3.11\"]",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".github/workflows/run-tests.yml"
+    }
+  ],
+  "clarifying_questions": [
+    "What is the exact scope of work? Will you be contributing changes to Requests itself (new features), or only building an application/library that uses Requests? Upstream is not accepting feature requests.",
+    "Which Python versions must the target environment support? This project requires Python >= 3.10.",
+    "Do you have any constraints on versions of urllib3, idna, charset_normalizer, or certifi used elsewhere in your stack that might conflict with Requests\u2019 version bounds?",
+    "Do you require FIPS mode or specific TLS/SSL backends? Any corporate CA requirements we should configure via REQUESTS_CA_BUNDLE/CURL_CA_BUNDLE?",
+    "Do you need SOCKS proxy support or chardet behavior (extras are available)?",
+    "Are there organizational security requirements (e.g., SCA/SBOM, vulnerability audit results) you can share?",
+    "Is offline or air\u2011gapped testing required? Many tests rely on local httpbin/pytest-httpbin fixtures and TLS test certs.",
+    "Any licensing or policy constraints with Apache-2.0 we should confirm?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Codebase quality and project maturity are high. Risks mainly stem from environment compatibility (Python version, dependency bounds) and upstream governance (no new features). Proceed once environment constraints and scope are confirmed, and after a quick vulnerability/dependency compatibility check in the client\u2019s environment.",
+  "build_status": "not_attempted",
+  "test_status": "not_attempted",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

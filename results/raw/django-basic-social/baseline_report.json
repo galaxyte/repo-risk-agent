@@ -1,0 +1,106 @@
+{
+  "repo_name": "django-basic-social",
+  "risk_score": 80,
+  "effort_multiplier": 2.5,
+  "summary": "Very old Django codebase (pre-Django 1.2 era) with Python 2-era patterns and a vendored BeautifulSoup 3.0.5 module. Project settings indicate development defaults (DEBUG=True), missing SECRET_KEY, legacy middleware and URL patterns, and likely incompatibility with modern Python/Django. Minimal README and no visible dependency pins or tests in the dump increase uncertainty. Substantial modernization or legacy environment recreation will be required.",
+  "red_flags": [
+    {
+      "title": "Legacy Django URL import indicates very old Django",
+      "severity": "high",
+      "evidence": "from django.conf.urls.defaults import *",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "urls.py"
+    },
+    {
+      "title": "Legacy manage.py entrypoint (execute_manager)",
+      "severity": "high",
+      "evidence": "from django.core.management import execute_manager",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "manage.py"
+    },
+    {
+      "title": "Old database settings style (pre-DATABASES)",
+      "severity": "high",
+      "evidence": "DATABASE_ENGINE = 'sqlite3'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py"
+    },
+    {
+      "title": "Deprecated middleware present",
+      "severity": "high",
+      "evidence": "\t'django.middleware.doc.XViewMiddleware',",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py"
+    },
+    {
+      "title": "Uses removed contrib app (django.contrib.comments)",
+      "severity": "high",
+      "evidence": "\t'django.contrib.comments',",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py"
+    },
+    {
+      "title": "Vendored BeautifulSoup 3.0.5 (Python 2-era)",
+      "severity": "medium",
+      "evidence": "Beautiful Soup works with Python 2.2 and up.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "BeautifulSoup.py"
+    },
+    {
+      "title": "DEBUG enabled in settings",
+      "severity": "medium",
+      "evidence": "DEBUG = True",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py"
+    },
+    {
+      "title": "SECRET_KEY not set (only placeholder comment present)",
+      "severity": "medium",
+      "evidence": "# Make this unique, and don't share it with anybody.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py"
+    },
+    {
+      "title": "Admin URLs commented out; no active URL patterns beyond empty skeleton",
+      "severity": "low",
+      "evidence": "#     (r'^admin/', include('django.contrib.admin.urls')),",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "urls.py"
+    },
+    {
+      "title": "README references third-party apps hosted on code.google.com (legacy hosting)",
+      "severity": "medium",
+      "evidence": "* \"Django Basic Blog\":http://code.google.com/p/django-basic-blog/",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python and Django versions is the target environment expected to use? Is the scope to port this to modern Python 3.x and Django 4/5, or to run it on a legacy stack?",
+    "Are the basic.* Django apps (basic.books, basic.movies, basic.music, basic.people, basic.profiles) present elsewhere in the repository or provided separately? Please share a full repo tree or packaging details.",
+    "How should SECRET_KEY and other environment-specific settings be managed (env vars, separate settings module)?",
+    "Is there an existing requirements.txt/poetry/Pipfile with pinned dependency versions? If not, can we define and pin them?",
+    "Are there any tests (unit/integration) not included in this dump? What test coverage or quality gates are expected?",
+    "What is the intended deployment target (OS, containerization, DB)? Is SQLite just for local dev, or is there an existing production database?",
+    "Is it acceptable to replace the vendored BeautifulSoup 3 with modern bs4 (beautifulsoup4) or lxml? Any constraints on changing third-party libs?",
+    "Do you need Django admin and comments features working, or can they be removed during modernization?",
+    "Do you require setting up CI/CD and security/dependency scanning (pip-audit/safety/bandit)?",
+    "Is there existing data that must be migrated? There are no Django migrations shown; do you have models and a migration plan elsewhere?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Multiple indicators of a pre-2010 Django/Python 2 codebase imply high upgrade and compatibility risk. Running on current platforms will likely fail without significant refactoring (URLs, settings, middleware, contrib apps). Missing SECRET_KEY and DEBUG=True are fixable but signal incomplete production hardening. Absence of visible tests and pins increases uncertainty. Proceed only if scope includes either a legacy environment setup or a defined modernization plan.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

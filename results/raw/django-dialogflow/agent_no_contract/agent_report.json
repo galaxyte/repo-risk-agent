@@ -1,0 +1,98 @@
+{
+  "repo_name": "django-dialogflow",
+  "risk_score": 82,
+  "effort_multiplier": 2.8,
+  "summary": "Legacy Django 1.11-era app with embedded project and app code. Multiple production secrets are hardcoded (Django SECRET_KEY and a Dialogflow client access token), DEBUG is enabled, and CORS/ALLOWED_HOSTS are development-oriented. Dependencies are very old and tightly pinned (Django 1.11.5 only), which is EOL and contains known CVEs; modernization to a supported Django/Python will require non-trivial refactoring (middleware settings, urlresolvers, admin/configs, tests). Dependency audit failed due to install/build issues with an old dialogflow-lite dependency, indicating fragility. CI targets Python 2.7/3.4/3.5 via Travis (defunct), and there are model code defects (duplicate created_at field) and minor packaging inconsistencies (license mismatch). Overall, high risk to take on without conditions; expect significant time to update, secure, and stabilize before feature work.",
+  "red_flags": [
+    {
+      "title": "Hardcoded Django SECRET_KEY in settings.py",
+      "severity": "critical",
+      "evidence": "django_dialogflow/django_dialogflow/settings.py:20",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/settings.py:20"
+    },
+    {
+      "title": "DEBUG enabled in production settings",
+      "severity": "high",
+      "evidence": "django_dialogflow/django_dialogflow/settings.py:23",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/settings.py:23"
+    },
+    {
+      "title": "Hardcoded Dialogflow client access token committed to repo",
+      "severity": "high",
+      "evidence": "django_dialogflow/django_dialogflow/settings.py:30",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/settings.py:30"
+    },
+    {
+      "title": "EOL Django version tightly pinned (blocks security updates)",
+      "severity": "high",
+      "evidence": "requirements.txt:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "requirements.txt:1"
+    },
+    {
+      "title": "Use of deprecated django.core.urlresolvers (breaks on modern Django)",
+      "severity": "medium",
+      "evidence": "django_dialogflow/django_dialogflow/tests.py:5",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/tests.py:5"
+    },
+    {
+      "title": "Model defect: Response.created_at defined twice (field overwritten)",
+      "severity": "medium",
+      "evidence": "django_dialogflow/django_dialogflow/models.py:21",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/models.py:21"
+    },
+    {
+      "title": "Model defect: Response.created_at duplicate definition",
+      "severity": "medium",
+      "evidence": "django_dialogflow/django_dialogflow/models.py:26",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "django_dialogflow/django_dialogflow/models.py:26"
+    },
+    {
+      "title": "Outdated CI targets unsupported Python versions; Travis CI config present",
+      "severity": "low",
+      "evidence": ".travis.yml:4-7",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": ".travis.yml:4-7"
+    },
+    {
+      "title": "License inconsistency between setup metadata and classifiers",
+      "severity": "low",
+      "evidence": "setup.py:37 and setup.py:44",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "setup.py:37"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python and Django versions must we support in production? Is a modernization to a supported Django LTS (e.g., 3.2/4.2/5.x) acceptable as part of scope?",
+    "Are the committed Dialogflow client_access_token and Django SECRET_KEY real/active? If so, can we rotate them immediately and move secrets to environment variables?",
+    "Do you want to continue using dialogflow-lite, or can we migrate to the official Dialogflow client library and API v2+?",
+    "What hosting environment are we targeting (OS, Python runtime, DB)? Any constraints on using Docker/containers to isolate legacy dependencies?",
+    "Is it acceptable to replace the Travis CI setup with a modern CI (GitHub Actions) and to drop Python 2.7/3.4/3.5 support?",
+    "What are your priorities: stabilizing and securing the current app, upgrading stack, or adding new features?",
+    "Are there any integration requirements (CORS origins, ALLOWED_HOSTS, domain names) we should lock down for production?",
+    "Do you have existing Dialogflow agent configuration and required scopes/keys, and can you provide non-production credentials for development?",
+    "Do you need database migrations/data preservation, and is it acceptable to adjust models (fix duplicate fields) as part of the upgrade?",
+    "Any test coverage or performance requirements we should target post-upgrade?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "High security exposure from committed secrets and DEBUG on; EOL Django and legacy patterns imply notable refactor to reach supported, secure runtime. Dependencies are fragile/outdated and CI is obsolete. Work is feasible but requires a defined upgrade/security-hardening phase before feature delivery. Proceed only if scope includes rotating secrets, removing hardcoded credentials, updating dependencies, and agreeing on a modernization path.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

@@ -1,0 +1,11 @@
+{
+  "repo_name": "lztestkit",
+  "model": "gpt-5",
+  "variant": "full",
+  "turns_used": 6,
+  "wall_clock_sec": 67.6,
+  "input_tokens": 39949,
+  "output_tokens": 6060,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

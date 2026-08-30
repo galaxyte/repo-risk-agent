@@ -1,0 +1,11 @@
+{
+  "repo_name": "click",
+  "model": "gpt-5",
+  "variant": "full",
+  "turns_used": 4,
+  "wall_clock_sec": 62.9,
+  "input_tokens": 33005,
+  "output_tokens": 4477,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

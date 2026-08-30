@@ -1,0 +1,20 @@
+# Throwaway sandbox image used to run untrusted repo build/test/audit commands.
+# One container per repo is started from this image, the repo is COPIED in
+# (never live-bind-mounted), and the container is destroyed after use.
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git curl ca-certificates build-essential \
+        python3 python3-pip python3-venv \
+        nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --break-system-packages --no-cache-dir pip-audit ruff radon pytest
+
+RUN useradd -m -u 1000 sandboxuser
+USER sandboxuser
+WORKDIR /workspace
+
+# No CMD/ENTRYPOINT: the harness starts this image with `sleep infinity`
+# and drives it entirely via `docker exec`, so every command is explicit
+# and logged by the caller rather than implicit in the image.

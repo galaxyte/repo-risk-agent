@@ -1,0 +1,61 @@
+{
+  "repo_name": "lztestkit",
+  "risk_score": 68,
+  "effort_multiplier": 2.0,
+  "summary": "Legacy OpenLaszlo testing toolkit (circa 2007) composed of static JS/LZX and JSP helpers. No modern package/dependency manifest or CI found; tests are intended to run in a browser against an OpenLaszlo server. Bundles very old third\u2011party libraries (jQuery 1.2.1 and SWFObject 1.5). Secret scan found nothing. Because the stack depends on niche, likely EOL technology and lacks automation, onboarding will require significant environment setup and/or containment, and work should be priced/timed accordingly.",
+  "red_flags": [
+    {
+      "title": "Requires legacy OpenLaszlo runtime to use or run examples/tests",
+      "severity": "high",
+      "evidence": "This package requires OpenLaszlo 3.4.0 or 4.0.6.  (Other versions\nmight work, but aren't tested.)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README:33"
+    },
+    {
+      "title": "Manual/browser-based test execution rather than headless/CI-friendly",
+      "severity": "medium",
+      "evidence": "* Visit e.g. http://127.0.0.1:8080/openlaszlo-4.0.6/lztestkit/examples\n  and http://127.0.0.1:8080/openlaszlo-4.0.6/lztestkit/test.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README:43"
+    },
+    {
+      "title": "Bundled very outdated jQuery (1.2.1, 2007)",
+      "severity": "high",
+      "evidence": "* jQuery 1.2.1 - New Wave Javascript",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/jquery-1.2.1.min.js:2"
+    },
+    {
+      "title": "Bundled outdated SWFObject v1.5 (Flash embed helper)",
+      "severity": "high",
+      "evidence": "* SWFObject v1.5: Flash Player detection and embed - http://blog.deconcept.com/swfobject/",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/swfobject.js:2"
+    },
+    {
+      "title": "Project TODO indicates incomplete docs/tests and pending features",
+      "severity": "medium",
+      "evidence": "* docs for behavioral testing, async\n* more test cases for autorun\n* more test cases, especially for hopkit",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "TODO:1-3,7"
+    }
+  ],
+  "clarifying_questions": [
+    "Do you already have a working OpenLaszlo 3.4.0/4.0.6 environment (server/servlet) where these tests/examples run? If not, is provisioning one (e.g., via container or VM) in scope?",
+    "Are modern browsers/targets required, and do you need Flash output at all? If so, what is the target runtime (Flash vs DHTML) and supported browsers?",
+    "What is the desired outcome: maintain/extend this toolkit, port it to a modern stack, or just run and validate its tests?",
+    "Is it acceptable to introduce a containerized dev/test environment and CI to automate running the JSP/Laszlo test suites?",
+    "Are we permitted to replace or remove bundled legacy libraries (jQuery 1.2.1, SWFObject) to address potential security and compatibility issues?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Key risks stem from the legacy, niche stack (OpenLaszlo-era code with Flash-era helpers), lack of automation, and very old bundled dependencies. These make environment setup and validation non-trivial and raise compatibility/security concerns. With access to (or scope to create) a reproducible OpenLaszlo environment and permission to containerize and modernize where feasible, the work is feasible but requires buffer for discovery and integration.",
+  "build_status": "not_attempted",
+  "test_status": "not_attempted",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

@@ -1,0 +1,8 @@
+{
+  "repo_name": "pyfsa",
+  "model": "gpt-5",
+  "wall_clock_sec": 83.6,
+  "input_tokens": 44799,
+  "output_tokens": 4917,
+  "file_dump_chars": 160035
+}

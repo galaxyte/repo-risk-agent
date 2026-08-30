@@ -1,0 +1,11 @@
+{
+  "repo_name": "django-dialogflow",
+  "model": "gpt-5",
+  "variant": "full",
+  "turns_used": 11,
+  "wall_clock_sec": 144.1,
+  "input_tokens": 99878,
+  "output_tokens": 8654,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

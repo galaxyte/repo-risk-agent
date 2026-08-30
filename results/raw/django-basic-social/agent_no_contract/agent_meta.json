@@ -1,0 +1,11 @@
+{
+  "repo_name": "django-basic-social",
+  "model": "gpt-5",
+  "variant": "no_contract",
+  "turns_used": 15,
+  "wall_clock_sec": 77.2,
+  "input_tokens": 44584,
+  "output_tokens": 4593,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

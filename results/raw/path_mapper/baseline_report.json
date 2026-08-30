@@ -1,0 +1,97 @@
+{
+  "repo_name": "path_mapper",
+  "risk_score": 78,
+  "effort_multiplier": 3.0,
+  "summary": "Library is early-stage/incomplete and Python 2\u2013only. Several core features advertised in README (component and regex routes) are unimplemented. There are clear coding defects (undefined super() target, brittle hashing in trie, private regex type, non-package imports). Key classes referenced by tests appear outside the provided dump. Expect significant stabilization, modernization, and feature work before production use.",
+  "red_flags": [
+    {
+      "title": "Undefined class used in super() call (likely a copy/paste bug)",
+      "severity": "critical",
+      "evidence": "super(ListTree, self).__init__(wildcard=wildcard)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/containers/route_tree.py"
+    },
+    {
+      "title": "Python 2\u2013only syntax used (incompatible with Python 3)",
+      "severity": "high",
+      "evidence": "raise KeyError, key",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/containers/prefix_tree.py"
+    },
+    {
+      "title": "Python 2\u2013only print statements (no parentheses)",
+      "severity": "high",
+      "evidence": "print '%s\\t%f' % (benchmark, time)",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "benchmarks/helpers.py"
+    },
+    {
+      "title": "Trie indexes by raw hash values, risking collisions and incorrect lookups",
+      "severity": "high",
+      "evidence": "node = node[1].setdefault(hash(element), [None, {}])",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/containers/prefix_tree.py"
+    },
+    {
+      "title": "Private regex type relied on (_pattern_type), brittle across Python versions",
+      "severity": "medium",
+      "evidence": "from re             import _pattern_type as regular_expression",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/routes/__init__.py"
+    },
+    {
+      "title": "Non-package relative imports (fragile, Py3-incompatible without edits)",
+      "severity": "medium",
+      "evidence": "from prefix_tree        import PrefixTree",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/containers/route_tree.py"
+    },
+    {
+      "title": "README advertises component/regex routes, but code marks them NotImplemented",
+      "severity": "high",
+      "evidence": "raise NotImplementedError, 'component routes not implemented yet'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/routes/__init__.py"
+    },
+    {
+      "title": "README advertises regex route support not present in code",
+      "severity": "medium",
+      "evidence": "The last check which is done is against regular expression paths:",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "README.markdown"
+    },
+    {
+      "title": "Regex routes explicitly unimplemented",
+      "severity": "medium",
+      "evidence": "raise NotImplementedError, 'regular expression routes not implemented yet'",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "lib/path_mapper/routes/__init__.py"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python versions must be supported? Is Python 3 compatibility required?",
+    "Where are the implementations for PathMapper, path_mapper.errors (NotFoundError), containers.RouteDict, routes.StaticRoute, and containers.route_list? If they exist, please include them.",
+    "Do you want component-path routes and regex routes implemented (as described in the README), or is static-only routing acceptable for this engagement?",
+    "Is there any CI set up and a recent build/test status? If so, please share badges or logs.",
+    "Are there packaging files (e.g., setup.py/pyproject.toml) and a published distribution target?",
+    "Are there any dependency/lock files or security audit outputs? If yes, please provide them.",
+    "What is the target environment (runtime version, OS) and performance expectations?",
+    "Is the scope limited to bug fixes and modernization, or does it include feature completion (component/regex routes)?",
+    "Is there a license for this project? If so, which one?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "Taking this on is feasible if the engagement explicitly includes Python 3 modernization, fixing core defects, aligning docs with implementation (or implementing missing features), and clarifying missing modules. Otherwise, risk of hidden rework is high.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

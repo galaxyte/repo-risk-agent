@@ -1,0 +1,72 @@
+{
+  "repo_name": "django-basic-social",
+  "risk_score": 82,
+  "effort_multiplier": 3.0,
+  "summary": "This repository is an extremely old Django skeleton that aggregates several third\u2011party \u201cDjango Basic\u201d apps and a vendored BeautifulSoup.py. It lacks dependency specs, appears to rely on missing submodules or external packages, and uses legacy Django patterns that are incompatible with modern Django/Python. Core settings are insecure/misconfigured (DEBUG=True, missing SECRET_KEY). ROOT_URLCONF points to a non\u2011existent module path, so the project will not start as\u2011is. There are no tests or CI, and many components (comments, admin media, template loaders) are long\u2011deprecated. Expect significant effort to either restore the historical stack (old Django/Python) or to perform a substantial modernization/rewrite.",
+  "red_flags": [
+    {
+      "title": "Missing SECRET_KEY in settings.py",
+      "severity": "high",
+      "evidence": "settings.py:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py:1"
+    },
+    {
+      "title": "DEBUG enabled in settings.py (TEMPLATE_DEBUG mirrors DEBUG)",
+      "severity": "medium",
+      "evidence": "settings.py:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py:1"
+    },
+    {
+      "title": "ROOT_URLCONF points to 'basic.urls' but no such module exists in repo",
+      "severity": "high",
+      "evidence": "settings.py:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py:1"
+    },
+    {
+      "title": "Legacy/removed Django settings and apps used (ADMIN_MEDIA_PREFIX, old TEMPLATE_LOADERS, XViewMiddleware, django.contrib.comments)",
+      "severity": "medium",
+      "evidence": "settings.py:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "settings.py:1"
+    },
+    {
+      "title": "urls.py uses deprecated import path 'from django.conf.urls.defaults import *'",
+      "severity": "medium",
+      "evidence": "urls.py:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "urls.py:1"
+    },
+    {
+      "title": "Vendored BeautifulSoup.py present (large, legacy, likely outdated)",
+      "severity": "low",
+      "evidence": "BeautifulSoup.py:1",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "BeautifulSoup.py:1"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python and Django versions must this project target? Is modernization to a supported Django (4.x/5.x) required, or is the goal to resurrect it on a legacy stack?",
+    "Are the third\u2011party apps (Basic Blog/Places/People/Library/Profiles) meant to be included as git submodules or vendored packages? If submodules, please provide the exact revisions or a lock of their versions.",
+    "What features must be working for MVP (e.g., people/profiles, books/movies/music library, admin, comments)?",
+    "Do you have any deployment environment constraints (OS, database, hosting platform)? Can we replace sqlite3 with Postgres/MySQL in non\u2011dev environments?",
+    "Is there any licensing guidance for the included/linked third\u2011party apps and the vendored BeautifulSoup.py?",
+    "Do you want production\u2011grade settings separation (dev/staging/prod), proper SECRET_KEY management, and basic security hardening?",
+    "Do you expect tests and CI to be added as part of the engagement? If so, what coverage/quality gates are desired?",
+    "Is it acceptable to replace deprecated components (django.contrib.comments, admin media paths, template loaders) with modern equivalents or remove them if not needed?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The codebase is non\u2011functional on modern stacks and insecure as\u2011is. Success depends on confirming the target runtime, obtaining/locking the external app dependencies, and agreeing to a modernization scope. With those conditions and explicit feature priorities, the project is feasible but entails substantial uncertainty and re\u2011implementation risk.",
+  "build_status": "unknown",
+  "test_status": "not_attempted",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

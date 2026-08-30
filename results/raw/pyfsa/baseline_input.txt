@@ -1,0 +1,6612 @@
+
+
+===== README.txt =====
+FSA - Finite State Automaton processing in Python
+-------------------------------------------------
+
+This package contains functions for manipulating Finite-State Automata
+(FSAs).  It includes functions for minimizing and determinizing FSAs,
+computing FSA intersections and unions, compiling a (non-POSIX)
+regular expression into an FSA, and compiling a set of regular
+expression productions into a chart parser.
+
+See the FSA_ module documentation for more information.
+
+.. _FSA: FSA.html
+
+
+===== FSA.py =====
+# Module FSA -- methods to manipulate finite-state automata
+
+"""
+This module defines an FSA class, for representing and operating on
+finite-state automata (FSAs). FSAs can be used to represent regular
+expressions and to test sequences for membership in the languages
+described by regular expressions.
+
+FSAs can be deterministic or nondeterministic, and they can contain
+epsilon transitions. Methods to determinize an automaton (also
+eliminating its epsilon transitions), and to minimize an automaton,
+are provided.
+
+The transition labels for an FSA can be symbols from an alphabet, as
+in the standard formal definition of an FSA, but they can also be
+instances which represent predicates. If these instances implement
+instance.matches(), then the FSA nextState() function and accepts()
+predicate can be used. If they implement instance.complement() and
+instance.intersection(), the FSA can be be determinized and minimized,
+to find a minimal deterministic FSA that accepts an equivalent
+language.
+
+
+Quick Start
+----------
+Instances of FSA can be created out of labels (for instance, strings)
+by the singleton() function, and combined to create more complex FSAs
+through the complement(), closure(), concatenation(), union(), and
+other constructors. For example, concatenation(singleton('a'),
+union(singleton('b'), closure(singleton('c')))) creates an FSA that
+accepts the strings 'a', 'ab', 'ac', 'acc', 'accc', and so on.
+
+Instances of FSA can also be created with the compileRE() function,
+which compiles a simple regular expression (using only '*', '?', '+',
+'|', '(', and ')' as metacharacters) into an FSA. For example,
+compileRE('a(b|c*)') returns an FSA equivalent to the example in the
+previous paragraph.
+
+FSAs can be determinized, to create equivalent FSAs (FSAs accepting
+the same language) with unique successor states for each input, and
+minimized, to create an equivalent deterministic FSA with the smallest
+number of states. FSAs can also be complemented, intersected, unioned,
+and so forth as described under 'FSA Functions' below.
+
+
+FSA Methods
+-----------
+The class FSA defines the following methods.
+
+Acceptance
+``````````
+fsa.nextStates(state, input)
+  returns a list of states
+fsa.nextState(state, input)
+  returns None or a single state if
+  |nextStates| <= 1, otherwise it raises an exception
+fsa.nextStateSet(states, input)
+  returns a list of states
+fsa.accepts(sequence)
+  returns true or false
+
+Accessors and predicates
+````````````````````````
+isEmpty()
+  returns true iff the language accepted by the FSA is the empty language
+labels()
+  returns a list of labels that are used in any transition
+nextAvailableState()
+  returns an integer n such that no states in the FSA
+  are numeric values >= n
+
+Reductions
+``````````
+sorted(initial=0)
+  returns an equivalent FSA whose states are numbered
+  upwards from 0
+determinized()
+  returns an equivalent deterministic FSA
+minimized()
+  returns an equivalent minimal FSA
+trimmed()
+  returns an equivalent FSA that contains no unreachable or dead
+  states
+
+Presentation
+````````````
+toDotString()
+  returns a string suitable as *.dot file for the 'dot'
+  program from AT&T GraphViz
+view()
+  views the FSA with a gs viewer, if gs and dot are installed
+
+
+FSA Functions
+------------
+Construction from FSAs
+``````````````````````
+complement(a)
+  returns an fsa that accepts exactly those sequences that its
+  argument does not
+closure(a)
+  returns an fsa that accepts sequences composed of zero or more
+  concatenations of sequences accepted by the argument
+concatenation(a, b)
+  returns an fsa that accepts sequences composed of a
+  sequence accepted by a, followed by a sequence accepted by b
+containment(a, occurrences=1)
+  returns an fsa that accepts sequences that
+  contain at least occurrences occurrences of a subsequence recognized by the
+  argument.
+difference(a, b)
+  returns an fsa that accepts those sequences accepted by a
+  but not b
+intersection(a, b)
+  returns an fsa that accepts sequences accepted by both a
+  and b
+iteration(a, min=1, max=None)
+  returns an fsa that accepts sequences
+  consisting of from min to max (or any number, if max is None) of sequences
+  accepted by its first argument
+option(a)
+  equivalent to union(a, EMPTY_STRING_FSA)
+reverse(a)
+  returns an fsa that accepts strings whose reversal is accepted by
+  the argument
+union(a, b)
+  returns an fsa that accepts sequences accepted by both a and b
+
+Predicates
+``````````
+equivalent(a, b)
+  returns true iff a and b accept the same language
+
+Reductions (these equivalent to the similarly-named methods)
+````````````````````````````````````````````````````````````
+determinize(fsa)
+  returns an equivalent deterministic FSA
+minimize(fsa)
+  returns an equivalent minimal FSA
+sort(fsa, initial=0)
+  returns an equivalent FSA whose states are numbered from
+  initial
+trim(fsa)
+  returns an equivalent FSA that contains no dead or unreachable
+  states
+
+Construction from labels
+````````````````````````
+compileRE(string)
+  returns an FSA that accepts the language described by
+  string, where string is a list of symbols and '*', '+', '?', and '|' operators,
+    with '(' and ')' to control precedence.
+sequence(sequence)
+  returns an fsa that accepts sequences that are matched by
+  the elements of the argument. For example, sequence('abc') returns an fsa that
+  accepts 'abc' and ['a', 'b', 'c'].
+singleton(label)
+  returns an fsa that accepts singletons whose elements are
+  matched by label. For example, singleton('a') returns an fsa that accepts only
+  the string 'a'.
+
+
+FSA Constants
+------------
+EMPTY_STRING_FSA is an FSA that accepts the language consisting only
+of the empty string.
+
+NULL_FSA is an FSA that accepts the null language.
+
+UNIVERSAL_FSA is an FSA that accepts S*, where S is any object.
+
+
+FSA instance creation
+---------------------
+FSA is initialized with a list of states, an alphabet, a list of
+transition, an initial state, and a list of final states. If fsa is an
+FSA, fsa.tuple() returns these values in that order, i.e. (states,
+alphabet, transitions, initialState, finalStates). They're also
+available as fields of fsa with those names.
+
+Each element of transition is a tuple of a start state, an end state,
+and a label: (startState, endSTate, label).
+
+If the list of states is None, it's computed from initialState,
+finalStates, and the states in transitions.
+
+If alphabet is None, an open alphabet is used: labels are assumed to
+be objects that implements label.matches(input), label.complement(),
+and label.intersection() as follows:
+
+    - label.matches(input) returns true iff label matches input
+    - label.complement() returnseither a label or a list of labels which,
+        together with the receiver, partition the input alphabet
+    - label.intersection(other) returns either None (if label and other don't
+        both match any symbol), or a label that matches the set of symbols that
+        both label and other match
+
+As a special case, strings can be used as labels. If a strings 'a' and
+'b' are used as a label and there's no alphabet, '~a' and '~b' are
+their respective complements, and '~a&~b' is the intersection of '~a'
+and '~b'. (The intersections of 'a' and 'b', 'a' and '~b', and '~a'
+and 'b' are, respectively, None, 'a', and 'b'.)
+
+
+Goals
+-----
+Design Goals:
+
+- easy to use
+- easy to read (simple implementation, direct expression of algorithms)
+- extensible
+
+Non-Goals:
+
+- efficiency
+"""
+
+__author__  = "Oliver Steele <steele@osteele.com>"
+
+from types import InstanceType, ListType, IntType, LongType
+IntegerTypes = (IntType, LongType)
+
+try:
+    import NumFSAUtils
+except ImportError:
+    NumFSAUtils = None
+
+ANY = 'ANY'
+EPSILON = None
+
+TRACE_LABEL_MULTIPLICATIONS = 0
+NUMPY_DETERMINIZATION_CUTOFF = 50
+
+class FSA:
+    def __init__(self, states, alphabet, transitions, initialState, finalStates, arcMetadata=[]):
+        if states == None:
+            states = self.collectStates(transitions, initialState, finalStates)
+        else:
+            assert not filter(lambda s, states=states:s not in states, self.collectStates(transitions, initialState, finalStates))
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.initialState = initialState
+        self.finalStates = finalStates
+        self.setArcMetadata(arcMetadata)
+    
+    
+    #
+    # Initialization
+    #
+    def makeStateTable(self, default=None):
+        for state in self.states:
+            if type(state) != IntType:
+                return {}
+        if reduce(min, self.states) < 0: return {}
+        if reduce(max, self.states) > max(100, len(self.states) * 2): return {}
+        return [default] * (reduce(max, self.states) + 1)
+    
+    def initializeTransitionTables(self):
+        self._transitionsFrom = self.makeStateTable()
+        for s in self.states:
+            self._transitionsFrom[s] = []
+        for transition in self.transitions:
+            s, _, label = transition
+            self._transitionsFrom[s].append(transition)
+    
+    def collectStates(self, transitions, initialState, finalStates):
+        states = finalStates[:]
+        if initialState not in states:
+            states.append(initialState)
+        for s0, s1, _ in transitions:
+            if s0 not in states: states.append(s0)
+            if s1 not in states: states.append(s1)
+        return states
+    
+    def computeEpsilonClosure(self, state):
+        states = [state]
+        index = 0
+        while index < len(states):
+            state, index = states[index], index + 1
+            for _, s, label in self.transitionsFrom(state):
+                if label == EPSILON and s not in states:
+                    states.append(s)
+        states.sort()
+        return states
+    
+    def computeEpsilonClosures(self):
+        self._epsilonClosures = self.makeStateTable()
+        for s in self.states:
+            self._epsilonClosures[s] = self.computeEpsilonClosure(s)
+    
+    
+    #
+    # Copying
+    #
+    def create(self, *args):
+        return apply(self.__class__, args)
+    
+    def copy(self, *args):
+        copy = apply(self.__class__, args)
+        if hasattr(self, 'label'):
+            copy.label = self.label
+        if hasattr(self, 'source'):
+            copy.source = self.source
+        return copy
+    
+    def creationArgs(self):
+        return self.tuple() + (self.getArcMetadata(),)
+    
+    def coerce(self, klass):
+        copy = apply(klass, self.creationArgs())
+        if hasattr(self, 'source'):
+            copy.source = self.source
+        return copy
+    
+    
+    #
+    # Accessors
+    #
+    def epsilonClosure(self, state):
+        try:
+            return self._epsilonClosures[state]
+        except AttributeError:
+            self.computeEpsilonClosures()
+        return self._epsilonClosures[state]
+    
+    def labels(self):
+        """Returns a list of transition labels."""
+        labels = []
+        for (_, _, label) in self.transitions:
+            if label and label not in labels:
+                labels.append(label)
+        return labels
+    
+    def nextAvailableState(self):
+        return reduce(max, filter(lambda s:type(s) in IntegerTypes, self.states), -1) + 1
+    
+    def transitionsFrom(self, state):
+        try:
+            return self._transitionsFrom[state]
+        except AttributeError:
+            self.initializeTransitionTables()
+        return self._transitionsFrom[state]
+    
+    def tuple(self):
+        return self.states, self.alphabet, self.transitions, self.initialState, self.finalStates
+    
+    
+    #
+    # Arc Metadata Accessors
+    #
+    def hasArcMetadata(self):
+        return hasattr(self, '_arcMetadata')
+    
+    def getArcMetadata(self):
+        return getattr(self, '_arcMetadata', {}).items()
+    
+    def setArcMetadata(self, list):
+        arcMetadata = {}
+        for (arc, data) in list:
+            arcMetadata[arc] = data
+        self._arcMetadata = arcMetadata
+    
+    def addArcMetadata(self, list):
+        for (arc, data) in list:
+            self.addArcMetadataFor(arc, data)
+    
+    def addArcMetadataFor(self, transition, data):
+        if not hasattr(self, '_arcMetadata'):
+            self._arcMetadata = {}
+        oldData = self._arcMetadata.get(transition)
+        if oldData:
+            for item in data:
+                if item not in oldData:
+                    oldData.append(item)
+        else:
+            self._arcMetadata[transition] = data
+        
+    def setArcMetadataFor(self, transition, data):
+        if not hasattr(self, '_arcMetadata'):
+            self._arcMetadata = {}
+        self._arcMetadata[transition] = data
+    
+    def getArcMetadataFor(self, transition, default=None):
+        return getattr(self, '_arcMetadata', {}).get(transition, default)
+    
+    
+    #
+    # Predicates
+    #
+    def isEmpty(self):
+        return not self.minimized().finalStates
+    
+    def isFSA(self):
+        return 1
+    
+    
+    #
+    # Accepting
+    #
+    def labelMatches(self, label, input):
+        return labelMatches(label, input)
+    
+    def nextStates(self, state, input):
+        states = []
+        for _, sink, label in self.transitionsFrom(state):
+            if self.labelMatches(label, input) and sink not in states:
+                states.extend(self.epsilonClosure(sink))
+        return states
+    
+    def nextState(self, state, input):
+        states = self.nextStates(state, input)
+        assert len(states) <= 1
+        return states and states[0]
+    
+    def nextStateSet(self, states, input):
+        successors = []
+        for state in states:
+            for _, sink, label in self.transitionsFrom(state):
+                if self.labelMatches(label, input) and sink not in successors:
+                    successors.append(sink)
+        return successors
+    
+    def accepts(self, sequence):
+        states = [self.initialState]
+        for item in sequence:
+            newStates = []
+            for state in states:
+                for s1 in self.nextStates(state, item):
+                    if s1 not in newStates:
+                        newStates.append(s1)
+            states = newStates
+        return len(filter(lambda s, finals=self.finalStates:s in finals, states)) > 0
+    
+    
+    #
+    # FSA operations
+    #
+    def complement(self):
+        states, alpha, transitions, start, finals = completion(self.determinized()).tuple()
+        return self.create(states, alpha, transitions, start, filter(lambda s,f=finals:s not in f, states))#.trimmed()
+    
+    
+    #
+    # Reductions
+    #
+    def sorted(self, initial=0):
+        if hasattr(self, '_isSorted'):
+            return self
+        stateMap = {}
+        nextState = initial
+        states, index = [self.initialState], 0
+        while index < len(states) or len(states) < len(self.states):
+            if index >= len(states):
+                for state in self.states:
+                    if stateMap.get(state) == None:
+                        break
+                states.append(state)
+            state, index = states[index], index + 1
+            new, nextState = nextState, nextState + 1
+            stateMap[state] = new
+            for _, s, _ in self.transitionsFrom(state):
+                if s not in states:
+                    states.append(s)
+        states = stateMap.values()
+        transitions = map(lambda (s0,s1,l),m=stateMap:(m[s0], m[s1], l), self.transitions)
+        arcMetadata = map(lambda ((s0, s1, label), data), m=stateMap: ((m[s0], m[s1], label), data), self.getArcMetadata())
+        copy = self.copy(states, self.alphabet, transitions, stateMap[self.initialState], map(stateMap.get, self.finalStates), arcMetadata)
+        copy._isSorted = 1
+        return copy
+    
+    def trimmed(self):
+        """Returns an equivalent FSA that doesn't include unreachable states,
+        or states that only lead to dead states."""
+        if hasattr(self, '_isTrimmed'):
+            return self
+        states, alpha, transitions, initial, finals = self.tuple()
+        reachable, index = [initial], 0
+        while index < len(reachable):
+            state, index = reachable[index], index + 1
+            for (_, s, _) in self.transitionsFrom(state):
+                if s not in reachable:
+                    reachable.append(s)
+        endable, index = list(finals), 0
+        while index < len(endable):
+            state, index = endable[index], index + 1
+            for (s0, s1, _) in transitions:
+                if s1 == state and s0 not in endable:
+                    endable.append(s0)
+        states = []
+        for s in reachable:
+            if s in endable:
+                states.append(s)
+        if not states:
+            if self.__class__  == FSA:
+                return NULL_FSA
+            else:
+                return NULL_FSA.coerce(self.__class__)
+        transitions = filter(lambda (s0, s1, _), states=states:s0 in states and s1 in states, transitions)
+        arcMetadata = filter(lambda ((s0, s1, _), __), states=states: s0 in states and s1 in states, self.getArcMetadata())
+        result = self.copy(states, alpha, transitions, initial, filter(lambda s, states=states:s in states, finals), arcMetadata).sorted()
+        result._isTrimmed = 1
+        return result
+    
+    def withoutEpsilons(self):
+        # replace each state by its epsilon closure
+        states0, alphabet, transitions0, initial0, finals0 = self.tuple()
+        initial = self.epsilonClosure(self.initialState)
+        initial.sort()
+        initial = tuple(initial)
+        stateSets, index = [initial], 0
+        transitions = []
+        while index < len(stateSets):
+            stateSet, index = stateSets[index], index + 1
+            for (s0, s1, label) in transitions0:
+                if s0 in stateSet and label:
+                    target = self.epsilonClosure(s1)
+                    target.sort()
+                    target = tuple(target)
+                    transition = (stateSet, target, label)
+                    if transition not in transitions:
+                        transitions.append(transition)
+                    if target not in stateSets:
+                        stateSets.append(target)
+        finalStates = []
+        for stateSet in stateSets:
+            if filter(lambda s, finalStates=self.finalStates:s in finalStates, stateSet):
+                finalStates.append(stateSet)
+        copy = self.copy(stateSets, alphabet, transitions, stateSets[0], finalStates).sorted()
+        copy._isTrimmed = 1
+        return copy
+    
+    def determinized(self):
+        """Returns a deterministic FSA that accepts the same language."""
+        if hasattr(self, '_isDeterminized'):
+            return self
+        if len(self.states) > NUMPY_DETERMINIZATION_CUTOFF and NumFSAUtils and not self.getArcMetadata():
+            data = apply(NumFSAUtils.determinize, self.tuple() + (self.epsilonClosure,))
+            result = apply(self.copy, data).sorted()
+            result._isDeterminized = 1
+            return result
+        transitions = []
+        stateSets, index = [tuple(self.epsilonClosure(self.initialState))], 0
+        arcMetadata = []
+        while index < len(stateSets):
+            stateSet, index = stateSets[index], index + 1
+            localTransitions = filter(lambda (s0,s1,l), set=stateSet:l and s0 in set, self.transitions)
+            if localTransitions:
+                localLabels = map(lambda(_,__,label):label, localTransitions)
+                labelMap = constructLabelMap(localLabels, self.alphabet)
+                labelTargets = {}   # a map from labels to target states
+                for transition in localTransitions:
+                    _, s1, l1 = transition
+                    for label, positives in labelMap:
+                        if l1 in positives:
+                            successorStates = labelTargets[label] = labelTargets.get(label) or []
+                            for s2 in self.epsilonClosure(s1):
+                                if s2 not in successorStates:
+                                    successorStates.append(s2)
+                            if self.getArcMetadataFor(transition):
+                                arcMetadata.append(((stateSet, successorStates, label), self.getArcMetadataFor(transition)))
+                for label, successorStates in labelTargets.items():
+                    successorStates.sort()
+                    successorStates = tuple(successorStates)
+                    transitions.append((stateSet, successorStates, label))
+                    if successorStates not in stateSets:
+                        stateSets.append(successorStates)
+        finalStates = []
+        for stateSet in stateSets:
+            if filter(lambda s,finalStates=self.finalStates:s in finalStates, stateSet):
+                finalStates.append(stateSet)
+        if arcMetadata:
+            def fixArc(pair):
+                (s0, s1, label), data = pair
+                s1.sort()
+                s1 = tuple(s1)
+                return ((s0, s1, label), data)
+            arcMetadata = map(fixArc, arcMetadata)
+        result = self.copy(stateSets, self.alphabet, transitions, stateSets[0], finalStates, arcMetadata).sorted()
+        result._isDeterminized = 1
+        result._isTrimmed = 1
+        return result
+    
+    def minimized(self):
+        """Returns a minimal FSA that accepts the same language."""
+        if hasattr(self, '_isMinimized'):
+            return self
+        self = self.trimmed().determinized()
+        states0, alpha0, transitions0, initial0, finals0 = self.tuple()
+        sinkState = self.nextAvailableState()
+        labels = self.labels()
+        states = filter(None, [
+                tuple(filter(lambda s, finalStates=self.finalStates:s not in finalStates, states0)),
+                tuple(filter(lambda s, finalStates=self.finalStates:s in finalStates, states0))])
+        labelMap = {}
+        for state in states0:
+            for label in labels:
+                found = 0
+                for s0, s1, l in self.transitionsFrom(state):
+                    if l == label:
+                        assert not found
+                        found = 1
+                        labelMap[(state, label)] = s1
+        changed = 1
+        iteration = 0
+        while changed:
+            changed = 0
+            iteration = iteration + 1
+            #print 'iteration', iteration
+            partitionMap = {sinkState: sinkState}
+            for set in states:
+                for state in set:
+                    partitionMap[state] = set
+            #print 'states =', states
+            for index in range(len(states)):
+                set = states[index]
+                if len(set) > 1:
+                    for label in labels:
+                        destinationMap = {}
+                        for state in set:
+                            nextSet = partitionMap[labelMap.get((state, label), sinkState)]
+                            targets = destinationMap[nextSet] = destinationMap.get(nextSet) or []
+                            targets.append(state)
+                        #print 'destinationMap from', set, label, ' =', destinationMap
+                        if len(destinationMap.values()) > 1:
+                            values = destinationMap.values()
+                            #print 'splitting', destinationMap.keys()
+                            for value in values:
+                                value.sort()
+                            states[index:index+1] = map(tuple, values)
+                            changed = 1
+                            break
+        transitions = removeDuplicates(map(lambda (s0,s1,label), m=partitionMap:(m[s0], m[s1], label), transitions0))
+        arcMetadata = map(lambda ((s0, s1, label), data), m=partitionMap:((m[s0], m[s1], label), data), self.getArcMetadata())
+        if not alpha0:
+            newTransitions = consolidateTransitions(transitions)
+            if arcMetadata:
+                newArcMetadata = []
+                for transition, data in arcMetadata:
+                    s0, s1, label = transition
+                    for newTransition in newTransitions:
+                        if newTransition[0] == s0 and newTransition[1] == s1 and labelIntersection(newTransition[2], label):
+                            newArcMetadata.append((newTransition, data))
+                arcMetadata = newArcMetadata
+            transitions = newTransitions
+        initial = partitionMap[initial0]
+        finals = removeDuplicates(map(lambda s, m=partitionMap:m[s], finals0))
+        result = self.copy(states, self.alphabet, transitions, initial, finals, arcMetadata).sorted()
+        result._isDeterminized = 1
+        result._isMinimized = 1
+        result._isTrimmed = 1
+        return result
+    
+    
+    #
+    # Presentation Methods
+    #
+    def __repr__(self):
+        if hasattr(self, 'label') and self.label:
+            return '<%s on %s>' % (self.__class__.__name__, self.label)
+        else:
+            return '<%s.%s instance>' % (self.__class__.__module__, self.__class__.__name__)
+    
+    def __str__(self):
+        import string
+        output = []
+        output.append('%s {' % (self.__class__.__name__,))
+        output.append('\tinitialState = ' + `self.initialState` + ';')
+        if self.finalStates:
+            output.append('\tfinalStates = ' + string.join(map(str, self.finalStates), ', ') + ';')
+        transitions = list(self.transitions)
+        transitions.sort()
+        for transition in transitions:
+            (s0, s1, label) = transition
+            additionalInfo = self.additionalTransitionInfoString(transition)
+            output.append('\t%s -> %s %s%s;' % (s0, s1, labelString(label), additionalInfo and ' ' + additionalInfo or ''));
+        output.append('}');
+        return string.join(output, '\n')
+    
+    def additionalTransitionInfoString(self, transition):
+        if self.getArcMetadataFor(transition):
+            import string
+            return '<' + string.join(map(str, self.getArcMetadataFor(transition)), ', ') + '>'
+    
+    def stateLabelString(self, state):
+        """A template method for specifying a state's label, for use in dot
+        diagrams. If this returns None, the default (the string representation
+        of the state) is used."""
+        return None
+    
+    def toDotString(self):
+        """Returns a string that can be printed by the DOT tool at
+        http://www.research.att.com/sw/tools/graphviz/ ."""
+        import string
+        output = []
+        output.append('digraph finite_state_machine {');
+        if self.finalStates:
+                output.append('\tnode [shape = doublecircle]; ' + string.join(map(str, self.finalStates), '; ') + ';' );
+        output.append('\tnode [shape = circle];');
+        output.append('\trankdir=LR;');
+        output.append('\t%s [style = bold];' % (self.initialState,))
+        for state in self.states:
+            if self.stateLabelString(state):
+                output.append('\t%s [label = "%s"];' % (state, string.replace(self.stateLabelString(state), '\n', '\\n')))
+        transitions = list(self.transitions)
+        transitions.sort()
+        for (s0, s1, label) in transitions:
+            output.append('\t%s -> %s  [label = "%s"];' % (s0, s1, string.replace(labelString(label), '\n', '\\n')));
+        output.append('}');
+        return string.join(output, '\n')
+    
+    def view(self):
+        view(self.toDotString())
+
+
+#
+# Recognizers for special-case languages
+#
+
+NULL_FSA = FSA([0], None, [], 0, [])
+EMPTY_STRING_FSA = FSA([0], None, [], 0, [0])
+UNIVERSAL_FSA = FSA([0], None, [(0, 0, ANY)], 0, [0])
+
+
+#
+# Utility functions
+#
+
+def removeDuplicates(sequence):
+    result = []
+    for x in sequence:
+        if x not in result:
+            result.append(x)
+    return result
+
+def toFSA(arg):
+    if hasattr(arg, 'isFSA') and arg.isFSA:
+        return arg
+    else:
+        return singleton(arg)
+
+def view(str):
+    import os, tempfile
+    dotfile = tempfile.mktemp()
+    psfile = tempfile.mktemp()
+    open(dotfile, 'w').write(str)
+    dotter = 'dot'
+    psviewer = 'gv'
+    psoptions = '-antialias'
+    os.system("%s -Tps %s -o %s" % (dotter, dotfile, psfile))
+    os.system("%s %s %s&" % (psviewer, psoptions, psfile))
+
+
+#
+# Operations on languages (via their recognizers)
+# These generally return nondeterministic FSAs.
+#
+
+def closure(arg):
+    fsa = toFSA(arg)
+    states, alpha, transitions, initial, finals = fsa.tuple()
+    final = fsa.nextAvailableState()
+    transitions = transitions[:]
+    for s in finals:
+        transitions.append((s, final, None))
+    transitions.append((initial, final, None))
+    transitions.append((final, initial, None))
+    return fsa.create(states + [final], alpha, transitions, initial, [final], fsa.getArcMetadata())
+
+def complement(arg):
+    """Returns an FSA that accepts exactly those strings that the argument does
+    not."""
+    return toFSA(arg).complement()
+
+def concatenation(a, *args):
+    """Returns an FSA that accepts the language consisting of the concatenation
+    of strings recognized by the arguments."""
+    a = toFSA(a)
+    for b in args:
+        b = toFSA(b).sorted(a.nextAvailableState())
+        states0, alpha0, transitions0, initial0, finals0 = a.tuple()
+        states1, alpha1, transitions1, initial1, finals1 = b.tuple()
+        a = a.create(states0 + states1, alpha0, transitions0 + transitions1 + map(lambda  s0, s1=initial1:(s0, s1, EPSILON), finals0), initial0, finals1, a.getArcMetadata() + b.getArcMetadata())
+    return a
+
+def containment(arg, occurrences=1):
+    """Returns an FSA that matches sequences containing at least _count_
+    occurrences
+    of _symbol_."""
+    arg = toFSA(arg)
+    fsa = closure(singleton(ANY))
+    for i in range(occurrences):
+        fsa = concatenation(fsa, concatenation(arg, closure(singleton(ANY))))
+    return fsa
+
+def difference(a, b):
+    """Returns an FSA that accepts those strings accepted by the first
+    argument, but not the second."""
+    return intersection(a, complement(b))
+
+def equivalent(a, b):
+    """Return true ifff a and b accept the same language."""
+    return difference(a, b).isEmpty() and difference(b, a).isEmpty()
+
+def intersection(a, b):
+    """Returns the intersection of two FSAs"""
+    a, b = completion(a.determinized()), completion(b.determinized())
+    states0, alpha0, transitions0, start0, finals0 = a.tuple()
+    states1, alpha1, transitions1, start1, finals1 = b.tuple()
+    states = [(start0, start1)]
+    index = 0
+    transitions = []
+    arcMetadata = []
+    buildArcMetadata = a.hasArcMetadata() or b.hasArcMetadata()
+    while index < len(states):
+        state, index = states[index], index + 1
+        for sa0, sa1, la in a.transitionsFrom(state[0]):
+            for sb0, sb1, lb in b.transitionsFrom(state[1]):
+                label = labelIntersection(la, lb)
+                if label:
+                    s = (sa1, sb1)
+                    transition = (state, s, label)
+                    transitions.append(transition)
+                    if s not in states:
+                        states.append(s)
+                    if buildArcMetadata:
+                        if a.getArcMetadataFor((sa0, sa1, la)):
+                            arcMetadata.append((transition, a.getArcMetadataFor((sa0, sa1, la))))
+                        if b.getArcMetadataFor((sa0, sa1, la)):
+                            arcMetadata.append((transition, b.getArcMetadataFor((sa0, sa1, la))))
+    finals = filter(lambda (s0, s1), f0=finals0, f1=finals1:s0 in f0 and s1 in f1, states)
+    return a.create(states, alpha0, transitions, states[0], finals, arcMetadata).sorted()
+
+def iteration(fsa, min=1, max=None):
+    """
+    >>> equivalent(iteration(singleton('a', 0, 2)), compileRE('|a|aa'))
+    >>> equivalent(iteration(singleton('a', 1, 2)), compileRE('a|aa'))
+    >>> equivalent(iteration(singleton('a', 1)), compileRE('aa*'))
+    """
+    if min:
+        return concatenation(fsa, iteration(fsa, min=min - 1, max=(max and max - 1)))
+    elif max:
+        return option(concatenation(fsa), iteration(fsa, min=min, max=max - 1))
+    else:
+        return closure(fsa)
+
+def option(fsa):
+    return union(fsa, EMPTY_STRING_FSA)
+
+def reverse(fsa):
+    states, alpha, transitions, initial, finals = fsa.tuple()
+    newInitial = fsa.nextAvailableState()
+    return fsa.create(states + [newInitial], alpha, map(lambda (s0, s1, l):(s1, s0, l), transitions) + map(lambda s1, s0=newInitial:(s0, s1, EPSILON), finals), [initial])
+
+def union(*args):
+    initial, final = 1, 2
+    states, transitions = [initial, final], []
+    arcMetadata = []
+    for arg in args:
+        arg = toFSA(arg).sorted(reduce(max, states) + 1)
+        states1, alpha1, transitions1, initial1, finals1 = arg.tuple()
+        states.extend(states1)
+        transitions.extend(list(transitions1))
+        transitions.append((initial, initial1, None))
+        for s in finals1:
+            transitions.append((s, final, None))
+        arcMetadata.extend(arg.getArcMetadata())
+    if len(args):
+        return toFSA(args[0]).create(states, alpha1, transitions, initial, [final], arcMetadata)
+    else:
+        return FSA(states, alpha1, transitions, initial, [final])
+
+
+#
+# FSA Functions
+#
+
+def completion(fsa):
+    """Returns an FSA that accepts the same language as the argument, but that
+    lands in a defined state for every input."""
+    states, alphabet, transitions, start, finals = fsa.tuple()
+    transitions = transitions[:]
+    sinkState = fsa.nextAvailableState()
+    for state in states:
+            labels = map(lambda (_, __, label):label, fsa.transitionsFrom(state))
+            for label in complementLabelSet(labels, alphabet):
+                transitions.append((state, sinkState, label))
+    if alphabet:
+        transitions.extend(map(lambda symbol, s=sinkState:(s, s, symbol), alphabet))
+    else:
+        transitions.append((sinkState, sinkState, ANY))
+    return fsa.copy(states + [sinkState], alphabet, transitions, start, finals, fsa.getArcMetadata())
+
+def determinize(fsa):
+    return fsa.determinized()
+
+def minimize(fsa):
+    return fsa.minimized()
+
+def sort(fsa):
+    return fsa.sorted()
+
+def trim(fsa):
+    return fsa.trimmed()
+
+
+#
+# Label operations
+#
+
+TRACE_LABEL_OPERATIONS = 0
+
+def labelComplements(label, alphabet):
+    complement = labelComplement(label, alphabet) or []
+    if TRACE_LABEL_OPERATIONS:
+        print 'complement(%s) = %s' % (label, complement)
+    if  type(complement) != ListType:
+        complement = [complement]
+    return complement
+
+def labelComplement(label, alphabet):
+    if type(label) == InstanceType:
+        return label.complement()
+    elif alphabet:
+        return filter(lambda s, s1=label:s != s1, alphabet)
+    elif label == ANY:
+        return None
+    else:
+        return symbolComplement(label)
+
+def labelIntersection(l1, l2):
+    intersection = _labelIntersection(l1, l2)
+    if TRACE_LABEL_OPERATIONS:
+            print 'intersection(%s, %s) = %s' % (l1, l2, intersection)
+    return intersection
+
+def _labelIntersection(l1, l2):
+    if l1 == l2:
+        return l1
+    #todo: is the following ever true
+    elif not l1 or not l2:
+        return None
+    elif l1 == ANY:
+        return l2
+    elif l2 == ANY:
+        return l1
+    elif type(l1) == InstanceType:
+        return l1.intersection(l2)
+    elif type(l2) == InstanceType:
+        return l2.intersection(l1)
+    else:
+        return symbolIntersection(l1, l2)
+
+def labelString(label):
+    return str(label)
+
+def labelMatches(label, input):
+    if type(label) == InstanceType and hasattr(label, 'matches'):
+        return label.matches(input)
+    else:
+        return label == input
+
+
+#
+# Label set operations
+#
+
+TRACE_LABEL_SET_OPERATIONS = 0
+
+def complementLabelSet(labels, alphabet=None):
+    if not labels:
+        return alphabet or [ANY]
+    result = labelComplements(labels[0], alphabet)
+    for label in labels[1:]:
+        result = intersectLabelSets(labelComplements(label, alphabet), result)
+    if TRACE_LABEL_SET_OPERATIONS:
+        print 'complement(%s) = %s' % (labels, result)
+    return result
+
+def intersectLabelSets(alist, blist):
+    clist = []
+    for a in alist:
+        for b in blist:
+            c = labelIntersection(a, b)
+            if c:
+                clist.append(c)
+    if TRACE_LABEL_SET_OPERATIONS:
+        print 'intersection%s = %s' % ((alist, blist), clist)
+    return clist
+
+def unionLabelSets(alist, blist, alphabet=None):
+    result = complementLabelSet(intersectLabelSets(complementLabelSet(alist, alphabet), complementLabelSet(blist, alphabet)), alphabet)
+    if TRACE_LABEL_SET_OPERATIONS:
+        print 'union%s = %s' % ((alist, blist), result)
+    return result
+
+
+#
+# Transition and Label utility operations
+#
+
+TRACE_CONSOLIDATE_TRANSITIONS = 0
+TRACE_CONSTRUCT_LABEL_MAP = 0
+
+def consolidateTransitions(transitions):
+    result = []
+    for s0, s1 in removeDuplicates(map(lambda (s0, s1, _):(s0,s1), transitions)):
+        labels = []
+        for ss0, ss1, label in transitions:
+            if ss0 == s0 and ss1 == s1:
+                labels.append(label)
+        if len(labels) > 1:
+            reduced = reduce(unionLabelSets, map(lambda label:[label], labels))
+            if TRACE_LABEL_OPERATIONS or TRACE_CONSOLIDATE_TRANSITIONS:
+                print 'consolidateTransitions(%s) -> %s' % (labels, reduced)
+            labels = reduced
+        for label in labels:
+            result.append((s0, s1, label))
+    return result
+
+def constructLabelMap(labels, alphabet, includeComplements=0):
+    """Return a list of (newLabel, positives), where newLabel is an
+    intersection of elements from labels and their complemens, and positives is
+    a list of labels that have non-empty intersections with newLabel."""
+    label = labels[0]
+    #if hasattr(label, 'constructLabelMap'):
+    #   return label.constructLabelMap(labels)
+    complements = labelComplements(label, alphabet)
+    if len(labels) == 1:
+        results = [(label, [label])]
+        if includeComplements:
+            for complement in complements:
+                results.append((complement, []))
+        return results
+    results = []
+    for newLabel, positives in constructLabelMap(labels[1:], alphabet, includeComplements=1):
+        newPositive = labelIntersection(label, newLabel)
+        if newPositive:
+            results.append((newPositive, [label] + positives))
+        for complement in complements:
+            if positives or includeComplements:
+                newNegative = labelIntersection(complement, newLabel)
+                if newNegative:
+                    results.append((newNegative, positives))
+    if TRACE_CONSTRUCT_LABEL_MAP:
+        print 'consolidateTransitions(%s) -> %s' % (labels, results)
+    return results
+
+
+#
+# Symbol operations
+#
+
+def symbolComplement(symbol):
+    if '&' in symbol:
+        import string
+        return map(symbolComplement, string.split(symbol, '&'))
+    elif symbol[0] == '~':
+        return symbol[1:]
+    else:
+        return '~' + symbol
+
+def symbolIntersection(s1, s2):
+    import string
+    set1 = string.split(s1, '&')
+    set2 = string.split(s2, '&')
+    for symbol in set1:
+        if symbolComplement(symbol) in set2:
+            return None
+    for symbol in set2:
+        if symbol not in set1:
+            set1.append(symbol)
+    nonNegatedSymbols = filter(lambda s:s[0] != '~', set1)
+    if len(nonNegatedSymbols) > 1:
+        return None
+    if nonNegatedSymbols:
+        return nonNegatedSymbols[0]
+    set1.sort()
+    return string.join(set1, '&')
+
+
+#
+# Construction from labels
+#
+
+def singleton(symbol, alphabet=None, arcMetadata=None):
+    fsa = FSA([0,1], alphabet, [(0, 1, symbol)], 0, [1])
+    if arcMetadata:
+        fsa.setArcMetadataFor((0, 1, symbol), arcMetadata)
+    fsa.label = `symbol`
+    return fsa
+
+def sequence(sequence, alphabet=None):
+    fsa = reduce(concatenation, map(lambda label, alphabet=alphabet:singleton(label, alphabet), sequence), EMPTY_STRING_FSA)
+    fsa.label = `sequence`
+    return fsa
+
+
+#
+# Compiling Regular Expressions
+#
+
+def compileRE(s, **options):
+    import string
+    if not options.get('multichar'):
+        s = string.replace(s, ' ', '')
+    fsa, index = compileREExpr(s + ')', 0, options)
+    if index < len(s):
+        raise 'extra ' + `')'`
+    fsa.label = str(s)
+    return fsa.minimized()
+
+def compileREExpr(str, index, options):
+    fsa = None
+    while index < len(str) and str[index] != ')':
+        fsa2, index = compileConjunction(str, index, options)
+        if  str[index] == '|': index = index + 1
+        fsa = (fsa and union(fsa, fsa2)) or fsa2
+    return (fsa or EMPTY_STRING_FSA), index
+
+def compileConjunction(str, index, options):
+    fsa = UNIVERSAL_FSA
+    while str[index] not in ')|':
+        conjunct, index = compileSequence(str, index, options)
+        if  str[index] == '&': index = index + 1
+        fsa = intersection(fsa, conjunct)
+    return fsa, index
+
+def compileSequence(str, index, options):
+    fsa = EMPTY_STRING_FSA
+    while str[index] not in ')|&':
+        fsa2, index = compileItem(str, index, options)
+        fsa = concatenation(fsa, fsa2)
+    return fsa, index
+
+def compileItem(str, index, options):
+    c , index = str[index], index + 1
+    while c == ' ':
+        c, index = str[index], index + 1
+    if c == '(':
+        fsa, index = compileREExpr(str, index, options)
+        assert str[index] == ')'
+        index = index + 1
+    elif c == '.':
+        fsa = singleton(ANY)
+    elif c == '~':
+        fsa, index = compileItem(str, index, options)
+        fsa = complement(fsa)
+    else:
+        label = c
+        if options.get('multichar'):
+            import string
+            while str[index] in string.letters or str[index] in string.digits:
+                label, index = label + str[index], index + 1
+        if str[index] == ':':
+            index = index + 1
+            upper = label
+            lower, index = str[index], index + 1
+            if upper  == '0':
+                upper  = EPSILON
+            if lower == '0':
+                lower = EPSILON
+            label = (upper, lower)
+        fsa = singleton(label)
+    while str[index] in '?*+':
+        c, index = str[index], index + 1
+        if c == '*':
+            fsa = closure(fsa)
+        elif c == '?':
+            fsa = union(fsa, EMPTY_STRING_FSA)
+        elif c == '+':
+            fsa = iteration(fsa)
+        else:
+            raise 'unimplemented'
+    return fsa, index
+
+"""
+TRACE_LABEL_OPERATIONS = 1
+TRACE_LABEL_OPERATIONS = 0
+
+print compileRE('')
+print compileRE('a')
+print compileRE('ab')
+print compileRE('abc')
+print compileRE('ab*')
+print compileRE('a*b')
+print compileRE('ab*c')
+print compileRE('ab?c')
+print compileRE('ab+c')
+print compileRE('ab|c')
+print compileRE('a(b|c)')
+
+print compileRE('abc').accepts('abc')
+print compileRE('abc').accepts('ab')
+
+print singleton('1', alphabet=['1']).minimized()
+print complement(singleton('1')).minimized()
+print singleton('1', alphabet=['1'])
+print completion(singleton('1'))
+print completion(singleton('1', alphabet=['1']))
+print complement(singleton('1', alphabet=['1']))
+print complement(singleton('1', alphabet=['1', '2']))
+print complement(singleton('1', alphabet=['1', '2'])).minimized()
+
+print intersection(compileRE('a*b'), compileRE('ab*'))
+print intersection(compileRE('a*cb'), compileRE('acb*'))
+print difference(compileRE('ab*'), compileRE('abb')).minimized()
+
+print compileRE('n.*v.*n')
+print compileRE('n.*v.*n&.*n.*n.*n.*')
+
+print intersection(compileRE('n.*v.*n'), compileRE('.*n.*n.*n.*'))
+print difference(compileRE('n.*v.*n'), compileRE('.*n.*n.*n.*'))
+print difference(difference(compileRE('n.*v.*n'), compileRE('.*n.*n.*n.*')), compileRE('.*v.*v.*'))
+
+print compileRE('a|~a').minimized()
+
+
+print containment(singleton('a'), 2).minimized()
+print difference(containment(singleton('a'), 2), containment(singleton('a'), 3)).minimized()
+print difference(containment(singleton('a'), 3), containment(singleton('a'), 2)).minimized()
+
+print difference(compileRE('a*b'), compileRE('ab*')).minimized()
+
+"""
+
+
+===== .happydoc.fsa.py =====
+(S'822675c38199b44f85699c1653abb0fc'
+p1
+(ihappydoclib.parseinfo.moduleinfo
+ModuleInfo
+p2
+(dp3
+S'_namespaces'
+p4
+((dp5
+S'FSA'
+p6
+(ihappydoclib.parseinfo.classinfo
+ClassInfo
+p7
+(dp8
+g4
+((dp9
+(dp10
+S'nextStates'
+p11
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp12
+g4
+((dp13
+(dp14
+tsS'_exception_info'
+p15
+(dsS'_parameter_names'
+p16
+(S'self'
+p17
+S'state'
+p18
+S'input'
+p19
+tsS'_parameter_info'
+p20
+(dp21
+g19
+(NNNtsg17
+(NNNtsg18
+(NNNtssS'_filename'
+p22
+S'fsa.py'
+p23
+sS'_docstring'
+p24
+S''
+sS'_name'
+p25
+g11
+sS'_parent'
+p26
+g7
+sS'_function_info'
+p27
+g14
+sS'_configuration_values'
+p28
+(dsS'_class_info'
+p29
+g13
+sS'_comment_info'
+p30
+(dp31
+(S'FSA'
+p32
+S'labelMatches'
+tS' \n Accepting\n \n'
+p33
+s(g32
+S'sorted'
+tS' \n Reductions\n \n'
+p34
+s(g32
+S'create'
+tS' \n Copying\n \n'
+p35
+s(g32
+S'complement'
+tS' \n FSA operations\n \n'
+p36
+s(g32
+S'hasArcMetadata'
+tS' \n Arc Metadata Accessors\n \n'
+p37
+s(g32
+S'__repr__'
+tS' \n Presentation Methods\n \n'
+p38
+s(g32
+S'makeStateTable'
+tS' \n Initialization\n \n'
+p39
+s(g32
+S'isEmpty'
+tS' \n Predicates\n \n'
+p40
+s(g32
+S'epsilonClosure'
+tS' \n Accessors\n \n'
+p41
+ssS'_comments'
+p42
+S''
+sbsS'makeStateTable'
+p43
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp44
+g4
+((dp45
+(dp46
+tsg15
+(dsg16
+(S'self'
+p47
+S'default'
+p48
+tsg20
+(dp49
+g48
+(I1
+S'None'
+Ntsg47
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g43
+sg26
+g7
+sg27
+g46
+sg28
+(dsg29
+g45
+sg30
+g31
+sg42
+g39
+sbsS'tuple'
+p50
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp51
+g4
+((dp52
+(dp53
+tsg15
+(dsg16
+(S'self'
+p54
+tsg20
+(dp55
+g54
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g50
+sg26
+g7
+sg27
+g53
+sg28
+(dsg29
+g52
+sg30
+g31
+sg42
+S''
+sbsS'collectStates'
+p56
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp57
+g4
+((dp58
+(dp59
+tsg15
+(dsg16
+(S'self'
+p60
+S'transitions'
+p61
+S'initialState'
+p62
+S'finalStates'
+p63
+tsg20
+(dp64
+g60
+(NNNtsg61
+(NNNtsg63
+(NNNtsg62
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g56
+sg26
+g7
+sg27
+g59
+sg28
+(dsg29
+g58
+sg30
+g31
+sg42
+S''
+sbsS'complement'
+p65
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp66
+g4
+((dp67
+(dp68
+tsg15
+(dsg16
+(S'self'
+p69
+tsg20
+(dp70
+g69
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g65
+sg26
+g7
+sg27
+g68
+sg28
+(dsg29
+g67
+sg30
+g31
+sg42
+g36
+sbsS'labels'
+p71
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp72
+g4
+((dp73
+(dp74
+tsg15
+(dsg16
+(S'self'
+p75
+tsg20
+(dp76
+g75
+(NNNtssg22
+g23
+sg24
+S'Returns a list of transition labels.'
+sg25
+g71
+sg26
+g7
+sg27
+g74
+sg28
+(dsg29
+g73
+sg30
+g31
+sg42
+S''
+sbsS'determinized'
+p77
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp78
+g4
+((dp79
+(dp80
+tsg15
+(dsg16
+(S'self'
+p81
+tsg20
+(dp82
+g81
+(NNNtssg22
+g23
+sg24
+S'Returns a deterministic FSA that accepts the same language.'
+sg25
+g77
+sg26
+g7
+sg27
+g80
+sg28
+(dsg29
+g79
+sg30
+g31
+sg42
+S''
+sbsS'minimized'
+p83
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp84
+g4
+((dp85
+(dp86
+tsg15
+(dsg16
+(S'self'
+p87
+tsg20
+(dp88
+g87
+(NNNtssg22
+g23
+sg24
+S'Returns a minimal FSA that accepts the same language.'
+sg25
+g83
+sg26
+g7
+sg27
+g86
+sg28
+(dsg29
+g85
+sg30
+g31
+sg42
+S''
+sbsS'initializeTransitionTables'
+p89
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp90
+g4
+((dp91
+(dp92
+tsg15
+(dsg16
+(S'self'
+p93
+tsg20
+(dp94
+g93
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g89
+sg26
+g7
+sg27
+g92
+sg28
+(dsg29
+g91
+sg30
+g31
+sg42
+S''
+sbsS'coerce'
+p95
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp96
+g4
+((dp97
+(dp98
+tsg15
+(dsg16
+(S'self'
+p99
+S'klass'
+p100
+tsg20
+(dp101
+g99
+(NNNtsg100
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g95
+sg26
+g7
+sg27
+g98
+sg28
+(dsg29
+g97
+sg30
+g31
+sg42
+S''
+sbsS'hasArcMetadata'
+p102
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp103
+g4
+((dp104
+(dp105
+tsg15
+(dsg16
+(S'self'
+p106
+tsg20
+(dp107
+g106
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g102
+sg26
+g7
+sg27
+g105
+sg28
+(dsg29
+g104
+sg30
+g31
+sg42
+g37
+sbsS'__str__'
+p108
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp109
+g4
+((dp110
+(dp111
+tsg15
+(dsg16
+(S'self'
+p112
+tsg20
+(dp113
+g112
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g108
+sg26
+g7
+sg27
+g111
+sg28
+(dsg29
+g110
+sg30
+g31
+sg42
+S''
+sbsS'stateLabelString'
+p114
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp115
+g4
+((dp116
+(dp117
+tsg15
+(dsg16
+(S'self'
+p118
+S'state'
+p119
+tsg20
+(dp120
+g118
+(NNNtsg119
+(NNNtssg22
+g23
+sg24
+S"A template method for specifying a state's label, for use in dot\n        diagrams. If this returns None, the default (the string representation\n        of the state) is used."
+sg25
+g114
+sg26
+g7
+sg27
+g117
+sg28
+(dsg29
+g116
+sg30
+g31
+sg42
+S''
+sbsS'labelMatches'
+p121
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp122
+g4
+((dp123
+(dp124
+tsg15
+(dsg16
+(S'self'
+p125
+S'label'
+p126
+S'input'
+p127
+tsg20
+(dp128
+g127
+(NNNtsg125
+(NNNtsg126
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g121
+sg26
+g7
+sg27
+g124
+sg28
+(dsg29
+g123
+sg30
+g31
+sg42
+g33
+sbsS'computeEpsilonClosure'
+p129
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp130
+g4
+((dp131
+(dp132
+tsg15
+(dsg16
+(S'self'
+p133
+S'state'
+p134
+tsg20
+(dp135
+g133
+(NNNtsg134
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g129
+sg26
+g7
+sg27
+g132
+sg28
+(dsg29
+g131
+sg30
+g31
+sg42
+S''
+sbsS'sorted'
+p136
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp137
+g4
+((dp138
+(dp139
+tsg15
+(dsg16
+(S'self'
+p140
+S'initial'
+p141
+tsg20
+(dp142
+g140
+(NNNtsg141
+(I1
+S'0'
+Ntssg22
+g23
+sg24
+S''
+sg25
+g136
+sg26
+g7
+sg27
+g139
+sg28
+(dsg29
+g138
+sg30
+g31
+sg42
+g34
+sbsS'copy'
+p143
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp144
+g4
+((dp145
+(dp146
+tsg15
+(dsg16
+(S'self'
+p147
+S'*args'
+p148
+tsg20
+(dp149
+g148
+(NNNtsg147
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g143
+sg26
+g7
+sg27
+g146
+sg28
+(dsg29
+g145
+sg30
+g31
+sg42
+S''
+sbsS'addArcMetadataFor'
+p150
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp151
+g4
+((dp152
+(dp153
+tsg15
+(dsg16
+(S'self'
+p154
+S'transition'
+p155
+S'data'
+p156
+tsg20
+(dp157
+g154
+(NNNtsg155
+(NNNtsg156
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g150
+sg26
+g7
+sg27
+g153
+sg28
+(dsg29
+g152
+sg30
+g31
+sg42
+S''
+sbsS'__init__'
+p158
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp159
+g4
+((dp160
+(dp161
+tsg15
+(dsg16
+(S'self'
+p162
+S'states'
+p163
+S'alphabet'
+p164
+S'transitions'
+p165
+S'initialState'
+p166
+S'finalStates'
+p167
+S'arcMetadata'
+p168
+tsg20
+(dp169
+g163
+(NNNtsg167
+(NNNtsg164
+(NNNtsg162
+(NNNtsg165
+(NNNtsg168
+(I1
+S'[]'
+Ntsg166
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g158
+sg26
+g7
+sg27
+g161
+sg28
+(dsg29
+g160
+sg30
+g31
+sg42
+S''
+sbsS'getArcMetadata'
+p170
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp171
+g4
+((dp172
+(dp173
+tsg15
+(dsg16
+(S'self'
+p174
+tsg20
+(dp175
+g174
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g170
+sg26
+g7
+sg27
+g173
+sg28
+(dsg29
+g172
+sg30
+g31
+sg42
+S''
+sbsS'setArcMetadataFor'
+p176
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp177
+g4
+((dp178
+(dp179
+tsg15
+(dsg16
+(S'self'
+p180
+S'transition'
+p181
+S'data'
+p182
+tsg20
+(dp183
+g180
+(NNNtsg181
+(NNNtsg182
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g176
+sg26
+g7
+sg27
+g179
+sg28
+(dsg29
+g178
+sg30
+g31
+sg42
+S''
+sbsS'withoutEpsilons'
+p184
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp185
+g4
+((dp186
+(dp187
+tsg15
+(dsg16
+(S'self'
+p188
+tsg20
+(dp189
+g188
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g184
+sg26
+g7
+sg27
+g187
+sg28
+(dsg29
+g186
+sg30
+g31
+sg42
+S''
+sbsS'addArcMetadata'
+p190
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp191
+g4
+((dp192
+(dp193
+tsg15
+(dsg16
+(S'self'
+p194
+S'list'
+p195
+tsg20
+(dp196
+g194
+(NNNtsg195
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g190
+sg26
+g7
+sg27
+g193
+sg28
+(dsg29
+g192
+sg30
+g31
+sg42
+S''
+sbsS'epsilonClosure'
+p197
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp198
+g4
+((dp199
+(dp200
+tsg15
+(dsg16
+(S'self'
+p201
+S'state'
+p202
+tsg20
+(dp203
+g201
+(NNNtsg202
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g197
+sg26
+g7
+sg27
+g200
+sg28
+(dsg29
+g199
+sg30
+g31
+sg42
+g41
+sbsS'additionalTransitionInfoString'
+p204
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp205
+g4
+((dp206
+(dp207
+tsg15
+(dsg16
+(S'self'
+p208
+S'transition'
+p209
+tsg20
+(dp210
+g208
+(NNNtsg209
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g204
+sg26
+g7
+sg27
+g207
+sg28
+(dsg29
+g206
+sg30
+g31
+sg42
+S''
+sbsS'create'
+p211
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp212
+g4
+((dp213
+(dp214
+tsg15
+(dsg16
+(S'self'
+p215
+S'*args'
+p216
+tsg20
+(dp217
+g216
+(NNNtsg215
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g211
+sg26
+g7
+sg27
+g214
+sg28
+(dsg29
+g213
+sg30
+g31
+sg42
+g35
+sbsS'isEmpty'
+p218
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp219
+g4
+((dp220
+(dp221
+tsg15
+(dsg16
+(S'self'
+p222
+tsg20
+(dp223
+g222
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g218
+sg26
+g7
+sg27
+g221
+sg28
+(dsg29
+g220
+sg30
+g31
+sg42
+g40
+sbsS'accepts'
+p224
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp225
+g4
+((dp226
+(dp227
+tsg15
+(dsg16
+(S'self'
+p228
+S'sequence'
+p229
+tsg20
+(dp230
+g228
+(NNNtsg229
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g224
+sg26
+g7
+sg27
+g227
+sg28
+(dsg29
+g226
+sg30
+g31
+sg42
+S''
+sbsS'getArcMetadataFor'
+p231
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp232
+g4
+((dp233
+(dp234
+tsg15
+(dsg16
+(S'self'
+p235
+S'transition'
+p236
+S'default'
+p237
+tsg20
+(dp238
+g237
+(I1
+S'None'
+Ntsg235
+(NNNtsg236
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g231
+sg26
+g7
+sg27
+g234
+sg28
+(dsg29
+g233
+sg30
+g31
+sg42
+S''
+sbsS'nextState'
+p239
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp240
+g4
+((dp241
+(dp242
+tsg15
+(dsg16
+(S'self'
+p243
+S'state'
+p244
+S'input'
+p245
+tsg20
+(dp246
+g245
+(NNNtsg243
+(NNNtsg244
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g239
+sg26
+g7
+sg27
+g242
+sg28
+(dsg29
+g241
+sg30
+g31
+sg42
+S''
+sbsS'trimmed'
+p247
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp248
+g4
+((dp249
+(dp250
+tsg15
+(dsg16
+(S'self'
+p251
+tsg20
+(dp252
+g251
+(NNNtssg22
+g23
+sg24
+S"Returns an equivalent FSA that doesn't include unreachable states,\n        or states that only lead to dead states."
+sg25
+g247
+sg26
+g7
+sg27
+g250
+sg28
+(dsg29
+g249
+sg30
+g31
+sg42
+S''
+sbsS'isFSA'
+p253
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp254
+g4
+((dp255
+(dp256
+tsg15
+(dsg16
+(S'self'
+p257
+tsg20
+(dp258
+g257
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g253
+sg26
+g7
+sg27
+g256
+sg28
+(dsg29
+g255
+sg30
+g31
+sg42
+S''
+sbsS'creationArgs'
+p259
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp260
+g4
+((dp261
+(dp262
+tsg15
+(dsg16
+(S'self'
+p263
+tsg20
+(dp264
+g263
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g259
+sg26
+g7
+sg27
+g262
+sg28
+(dsg29
+g261
+sg30
+g31
+sg42
+S''
+sbsS'__repr__'
+p265
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp266
+g4
+((dp267
+(dp268
+tsg15
+(dsg16
+(S'self'
+p269
+tsg20
+(dp270
+g269
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g265
+sg26
+g7
+sg27
+g268
+sg28
+(dsg29
+g267
+sg30
+g31
+sg42
+g38
+sbsS'setArcMetadata'
+p271
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp272
+g4
+((dp273
+(dp274
+tsg15
+(dsg16
+(S'self'
+p275
+S'list'
+p276
+tsg20
+(dp277
+g275
+(NNNtsg276
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g271
+sg26
+g7
+sg27
+g274
+sg28
+(dsg29
+g273
+sg30
+g31
+sg42
+S''
+sbsS'nextAvailableState'
+p278
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp279
+g4
+((dp280
+(dp281
+tsg15
+(dsg16
+(S'self'
+p282
+tsg20
+(dp283
+g282
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g278
+sg26
+g7
+sg27
+g281
+sg28
+(dsg29
+g280
+sg30
+g31
+sg42
+S''
+sbsS'computeEpsilonClosures'
+p284
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp285
+g4
+((dp286
+(dp287
+tsg15
+(dsg16
+(S'self'
+p288
+tsg20
+(dp289
+g288
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g284
+sg26
+g7
+sg27
+g287
+sg28
+(dsg29
+g286
+sg30
+g31
+sg42
+S''
+sbsS'view'
+p290
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp291
+g4
+((dp292
+(dp293
+tsg15
+(dsg16
+(S'self'
+p294
+tsg20
+(dp295
+g294
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g290
+sg26
+g7
+sg27
+g293
+sg28
+(dsg29
+g292
+sg30
+g31
+sg42
+S''
+sbsS'nextStateSet'
+p296
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp297
+g4
+((dp298
+(dp299
+tsg15
+(dsg16
+(S'self'
+p300
+S'states'
+p301
+S'input'
+p302
+tsg20
+(dp303
+g301
+(NNNtsg302
+(NNNtsg300
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g296
+sg26
+g7
+sg27
+g299
+sg28
+(dsg29
+g298
+sg30
+g31
+sg42
+S''
+sbsS'toDotString'
+p304
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp305
+g4
+((dp306
+(dp307
+tsg15
+(dsg16
+(S'self'
+p308
+tsg20
+(dp309
+g308
+(NNNtssg22
+g23
+sg24
+S'Returns a string that can be printed by the DOT tool at\n        http://www.research.att.com/sw/tools/graphviz/ .'
+sg25
+g304
+sg26
+g7
+sg27
+g307
+sg28
+(dsg29
+g306
+sg30
+g31
+sg42
+S''
+sbsS'transitionsFrom'
+p310
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp311
+g4
+((dp312
+(dp313
+tsg15
+(dsg16
+(S'self'
+p314
+S'state'
+p315
+tsg20
+(dp316
+g314
+(NNNtsg315
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g310
+sg26
+g7
+sg27
+g313
+sg28
+(dsg29
+g312
+sg30
+g31
+sg42
+S''
+sbstsg22
+g23
+sg24
+S''
+sS'_class_member_info'
+p317
+(lsg25
+g6
+sg26
+g2
+sg27
+g10
+sg42
+S''
+sg28
+(dsg29
+g9
+sg30
+g31
+sS'_base_class_info'
+p318
+(lsbs(dp319
+S'trim'
+p320
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp321
+g4
+((dp322
+(dp323
+tsg15
+(dsg16
+(S'fsa'
+p324
+tsg20
+(dp325
+g324
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g320
+sg26
+g2
+sg27
+g323
+sg28
+(dsg29
+g322
+sg30
+g31
+sg42
+S''
+sbsS'completion'
+p326
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp327
+g4
+((dp328
+(dp329
+tsg15
+(dsg16
+(S'fsa'
+p330
+tsg20
+(dp331
+g330
+(NNNtssg22
+g23
+sg24
+S'Returns an FSA that accepts the same language as the argument, but that\n    lands in a defined state for every input.'
+sg25
+g326
+sg26
+g2
+sg27
+g329
+sg28
+(dsg29
+g328
+sg30
+g31
+sg42
+S''
+sbsS'singleton'
+p332
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp333
+g4
+((dp334
+(dp335
+tsg15
+(dsg16
+(S'symbol'
+p336
+S'alphabet'
+p337
+S'arcMetadata'
+p338
+tsg20
+(dp339
+g337
+(I1
+S'None'
+Ntsg336
+(NNNtsg338
+(I1
+S'None'
+Ntssg22
+g23
+sg24
+S''
+sg25
+g332
+sg26
+g2
+sg27
+g335
+sg28
+(dsg29
+g334
+sg30
+g31
+sg42
+S''
+sbsS'option'
+p340
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp341
+g4
+((dp342
+(dp343
+tsg15
+(dsg16
+(S'fsa'
+p344
+tsg20
+(dp345
+g344
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g340
+sg26
+g2
+sg27
+g343
+sg28
+(dsg29
+g342
+sg30
+g31
+sg42
+S''
+sbsS'sequence'
+p346
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp347
+g4
+((dp348
+(dp349
+tsg15
+(dsg16
+(S'sequence'
+p350
+S'alphabet'
+p351
+tsg20
+(dp352
+g351
+(I1
+S'None'
+Ntsg350
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g346
+sg26
+g2
+sg27
+g349
+sg28
+(dsg29
+g348
+sg30
+g31
+sg42
+S''
+sbsS'equivalent'
+p353
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp354
+g4
+((dp355
+(dp356
+tsg15
+(dsg16
+(S'a'
+S'b'
+tsg20
+(dp357
+S'a'
+(NNNtsS'b'
+(NNNtssg22
+g23
+sg24
+S'Return true ifff a and b accept the same language.'
+sg25
+g353
+sg26
+g2
+sg27
+g356
+sg28
+(dsg29
+g355
+sg30
+g31
+sg42
+S''
+sbsS'unionLabelSets'
+p358
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp359
+g4
+((dp360
+(dp361
+tsg15
+(dsg16
+(S'alist'
+p362
+S'blist'
+p363
+S'alphabet'
+p364
+tsg20
+(dp365
+g364
+(I1
+S'None'
+Ntsg363
+(NNNtsg362
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g358
+sg26
+g2
+sg27
+g361
+sg28
+(dsg29
+g360
+sg30
+g31
+sg42
+S''
+sbsS'symbolComplement'
+p366
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp367
+g4
+((dp368
+(dp369
+tsg15
+(dsg16
+(S'symbol'
+p370
+tsg20
+(dp371
+g370
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g366
+sg26
+g2
+sg27
+g369
+sg28
+(dsg29
+g368
+sg30
+g31
+sg42
+S''
+sbsS'concatenation'
+p372
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp373
+g4
+((dp374
+(dp375
+tsg15
+(dsg16
+(S'a'
+S'*args'
+p376
+tsg20
+(dp377
+S'a'
+(NNNtsg376
+(NNNtssg22
+g23
+sg24
+S'Returns an FSA that accepts the language consisting of the concatenation\n    of strings recognized by the arguments.'
+sg25
+g372
+sg26
+g2
+sg27
+g375
+sg28
+(dsg29
+g374
+sg30
+g31
+sg42
+S''
+sbsS'sort'
+p378
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp379
+g4
+((dp380
+(dp381
+tsg15
+(dsg16
+(S'fsa'
+p382
+tsg20
+(dp383
+g382
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g378
+sg26
+g2
+sg27
+g381
+sg28
+(dsg29
+g380
+sg30
+g31
+sg42
+S''
+sbsS'labelIntersection'
+p384
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp385
+g4
+((dp386
+(dp387
+tsg15
+(dsg16
+(S'l1'
+p388
+S'l2'
+p389
+tsg20
+(dp390
+g389
+(NNNtsg388
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g384
+sg26
+g2
+sg27
+g387
+sg28
+(dsg29
+g386
+sg30
+g31
+sg42
+S''
+sbsS'intersectLabelSets'
+p391
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp392
+g4
+((dp393
+(dp394
+tsg15
+(dsg16
+(S'alist'
+p395
+S'blist'
+p396
+tsg20
+(dp397
+g396
+(NNNtsg395
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g391
+sg26
+g2
+sg27
+g394
+sg28
+(dsg29
+g393
+sg30
+g31
+sg42
+S''
+sbsS'labelString'
+p398
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp399
+g4
+((dp400
+(dp401
+tsg15
+(dsg16
+(S'label'
+p402
+tsg20
+(dp403
+g402
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g398
+sg26
+g2
+sg27
+g401
+sg28
+(dsg29
+g400
+sg30
+g31
+sg42
+S''
+sbsS'compileItem'
+p404
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp405
+g4
+((dp406
+(dp407
+tsg15
+(dp408
+S"'unimplemented'"
+Nssg16
+(S'str'
+p409
+S'index'
+p410
+S'options'
+p411
+tsg20
+(dp412
+g410
+(NNNtsg411
+(NNNtsg409
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g404
+sg26
+g2
+sg27
+g407
+sg28
+(dsg29
+g406
+sg30
+g31
+sg42
+S''
+sbsS'labelComplement'
+p413
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp414
+g4
+((dp415
+(dp416
+tsg15
+(dsg16
+(S'label'
+p417
+S'alphabet'
+p418
+tsg20
+(dp419
+g418
+(NNNtsg417
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g413
+sg26
+g2
+sg27
+g416
+sg28
+(dsg29
+g415
+sg30
+g31
+sg42
+S''
+sbsS'removeDuplicates'
+p420
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp421
+g4
+((dp422
+(dp423
+tsg15
+(dsg16
+(S'sequence'
+p424
+tsg20
+(dp425
+g424
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g420
+sg26
+g2
+sg27
+g423
+sg28
+(dsg29
+g422
+sg30
+g31
+sg42
+S''
+sbsS'difference'
+p426
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp427
+g4
+((dp428
+(dp429
+tsg15
+(dsg16
+(S'a'
+S'b'
+tsg20
+(dp430
+S'a'
+(NNNtsS'b'
+(NNNtssg22
+g23
+sg24
+S'Returns an FSA that accepts those strings accepted by the first\n    argument, but not the second.'
+sg25
+g426
+sg26
+g2
+sg27
+g429
+sg28
+(dsg29
+g428
+sg30
+g31
+sg42
+S''
+sbsS'compileREExpr'
+p431
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp432
+g4
+((dp433
+(dp434
+tsg15
+(dsg16
+(S'str'
+p435
+S'index'
+p436
+S'options'
+p437
+tsg20
+(dp438
+g436
+(NNNtsg437
+(NNNtsg435
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g431
+sg26
+g2
+sg27
+g434
+sg28
+(dsg29
+g433
+sg30
+g31
+sg42
+S''
+sbsS'complementLabelSet'
+p439
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp440
+g4
+((dp441
+(dp442
+tsg15
+(dsg16
+(S'labels'
+p443
+S'alphabet'
+p444
+tsg20
+(dp445
+g444
+(I1
+S'None'
+Ntsg443
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g439
+sg26
+g2
+sg27
+g442
+sg28
+(dsg29
+g441
+sg30
+g31
+sg42
+S''
+sbsS'compileRE'
+p446
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp447
+g4
+((dp448
+(dp449
+tsg15
+(dp450
+S"'extra ' + ` ')' `"
+Nssg16
+(S's'
+S'**options'
+p451
+tsg20
+(dp452
+S's'
+(NNNtsg451
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g446
+sg26
+g2
+sg27
+g449
+sg28
+(dsg29
+g448
+sg30
+g31
+sg42
+S''
+sbsS'closure'
+p453
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp454
+g4
+((dp455
+(dp456
+tsg15
+(dsg16
+(S'arg'
+p457
+tsg20
+(dp458
+g457
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g453
+sg26
+g2
+sg27
+g456
+sg28
+(dsg29
+g455
+sg30
+g31
+sg42
+S''
+sbsS'labelComplements'
+p459
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp460
+g4
+((dp461
+(dp462
+tsg15
+(dsg16
+(S'label'
+p463
+S'alphabet'
+p464
+tsg20
+(dp465
+g464
+(NNNtsg463
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g459
+sg26
+g2
+sg27
+g462
+sg28
+(dsg29
+g461
+sg30
+g31
+sg42
+S''
+sbsS'intersection'
+p466
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp467
+g4
+((dp468
+(dp469
+tsg15
+(dsg16
+(S'a'
+S'b'
+tsg20
+(dp470
+S'a'
+(NNNtsS'b'
+(NNNtssg22
+g23
+sg24
+S'Returns the intersection of two FSAs'
+sg25
+g466
+sg26
+g2
+sg27
+g469
+sg28
+(dsg29
+g468
+sg30
+g31
+sg42
+S''
+sbsS'reverse'
+p471
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp472
+g4
+((dp473
+(dp474
+tsg15
+(dsg16
+(S'fsa'
+p475
+tsg20
+(dp476
+g475
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g471
+sg26
+g2
+sg27
+g474
+sg28
+(dsg29
+g473
+sg30
+g31
+sg42
+S''
+sbsS'determinize'
+p477
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp478
+g4
+((dp479
+(dp480
+tsg15
+(dsg16
+(S'fsa'
+p481
+tsg20
+(dp482
+g481
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g477
+sg26
+g2
+sg27
+g480
+sg28
+(dsg29
+g479
+sg30
+g31
+sg42
+S''
+sbsS'union'
+p483
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp484
+g4
+((dp485
+(dp486
+tsg15
+(dsg16
+(S'*args'
+p487
+tsg20
+(dp488
+g487
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g483
+sg26
+g2
+sg27
+g486
+sg28
+(dsg29
+g485
+sg30
+g31
+sg42
+S''
+sbsS'symbolIntersection'
+p489
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp490
+g4
+((dp491
+(dp492
+tsg15
+(dsg16
+(S's1'
+p493
+S's2'
+p494
+tsg20
+(dp495
+g494
+(NNNtsg493
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g489
+sg26
+g2
+sg27
+g492
+sg28
+(dsg29
+g491
+sg30
+g31
+sg42
+S''
+sbsS'compileSequence'
+p496
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp497
+g4
+((dp498
+(dp499
+tsg15
+(dsg16
+(S'str'
+p500
+S'index'
+p501
+S'options'
+p502
+tsg20
+(dp503
+g501
+(NNNtsg502
+(NNNtsg500
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g496
+sg26
+g2
+sg27
+g499
+sg28
+(dsg29
+g498
+sg30
+g31
+sg42
+S''
+sbsS'iteration'
+p504
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp505
+g4
+((dp506
+(dp507
+tsg15
+(dsg16
+(S'fsa'
+p508
+S'min'
+p509
+S'max'
+p510
+tsg20
+(dp511
+g508
+(NNNtsg510
+(I1
+S'None'
+Ntsg509
+(I1
+S'1'
+Ntssg22
+g23
+sg24
+S"\n    >>> equivalent(iteration(singleton('a', 0, 2)), compileRE('|a|aa'))\n    >>> equivalent(iteration(singleton('a', 1, 2)), compileRE('a|aa'))\n    >>> equivalent(iteration(singleton('a', 1)), compileRE('aa*'))\n    "
+sg25
+g504
+sg26
+g2
+sg27
+g507
+sg28
+(dsg29
+g506
+sg30
+g31
+sg42
+S''
+sbsS'constructLabelMap'
+p512
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp513
+g4
+((dp514
+(dp515
+tsg15
+(dsg16
+(S'labels'
+p516
+S'alphabet'
+p517
+S'includeComplements'
+p518
+tsg20
+(dp519
+g517
+(NNNtsg516
+(NNNtsg518
+(I1
+S'0'
+Ntssg22
+g23
+sg24
+S'Return a list of (newLabel, positives), where newLabel is an\n    intersection of elements from labels and their complemens, and positives is\n    a list of labels that have non-empty intersections with newLabel.'
+sg25
+g512
+sg26
+g2
+sg27
+g515
+sg28
+(dsg29
+g514
+sg30
+g31
+sg42
+S''
+sbsS'toFSA'
+p520
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp521
+g4
+((dp522
+(dp523
+tsg15
+(dsg16
+(S'arg'
+p524
+tsg20
+(dp525
+g524
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g520
+sg26
+g2
+sg27
+g523
+sg28
+(dsg29
+g522
+sg30
+g31
+sg42
+S''
+sbsS'compileConjunction'
+p526
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp527
+g4
+((dp528
+(dp529
+tsg15
+(dsg16
+(S'str'
+p530
+S'index'
+p531
+S'options'
+p532
+tsg20
+(dp533
+g531
+(NNNtsg532
+(NNNtsg530
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g526
+sg26
+g2
+sg27
+g529
+sg28
+(dsg29
+g528
+sg30
+g31
+sg42
+S''
+sbsS'minimize'
+p534
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp535
+g4
+((dp536
+(dp537
+tsg15
+(dsg16
+(S'fsa'
+p538
+tsg20
+(dp539
+g538
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g534
+sg26
+g2
+sg27
+g537
+sg28
+(dsg29
+g536
+sg30
+g31
+sg42
+S''
+sbsS'consolidateTransitions'
+p540
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp541
+g4
+((dp542
+(dp543
+tsg15
+(dsg16
+(S'transitions'
+p544
+tsg20
+(dp545
+g544
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g540
+sg26
+g2
+sg27
+g543
+sg28
+(dsg29
+g542
+sg30
+g31
+sg42
+S''
+sbsS'containment'
+p546
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp547
+g4
+((dp548
+(dp549
+tsg15
+(dsg16
+(S'arg'
+p550
+S'occurrences'
+p551
+tsg20
+(dp552
+g551
+(I1
+S'1'
+Ntsg550
+(NNNtssg22
+g23
+sg24
+S'Returns an FSA that matches sequences containing at least _count_\n    occurrences\n    of _symbol_.'
+sg25
+g546
+sg26
+g2
+sg27
+g549
+sg28
+(dsg29
+g548
+sg30
+g31
+sg42
+S''
+sbsS'labelMatches'
+p553
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp554
+g4
+((dp555
+(dp556
+tsg15
+(dsg16
+(S'label'
+p557
+S'input'
+p558
+tsg20
+(dp559
+g558
+(NNNtsg557
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g553
+sg26
+g2
+sg27
+g556
+sg28
+(dsg29
+g555
+sg30
+g31
+sg42
+S''
+sbsS'_labelIntersection'
+p560
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp561
+g4
+((dp562
+(dp563
+tsg15
+(dsg16
+(S'l1'
+p564
+S'l2'
+p565
+tsg20
+(dp566
+g565
+(NNNtsg564
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g560
+sg26
+g2
+sg27
+g563
+sg28
+(dsg29
+g562
+sg30
+g31
+sg42
+S''
+sbsS'complement'
+p567
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp568
+g4
+((dp569
+(dp570
+tsg15
+(dsg16
+(S'arg'
+p571
+tsg20
+(dp572
+g571
+(NNNtssg22
+g23
+sg24
+S'Returns an FSA that accepts exactly those strings that the argument does\n    not.'
+sg25
+g567
+sg26
+g2
+sg27
+g570
+sg28
+(dsg29
+g569
+sg30
+g31
+sg42
+S''
+sbsS'view'
+p573
+(ihappydoclib.parseinfo.functioninfo
+FunctionInfo
+(dp574
+g4
+((dp575
+(dp576
+tsg15
+(dsg16
+(S'str'
+p577
+tsg20
+(dp578
+g577
+(NNNtssg22
+g23
+sg24
+S''
+sg25
+g573
+sg26
+g2
+sg27
+g576
+sg28
+(dsg29
+g575
+sg30
+g31
+sg42
+S''
+sbstsS'_import_info'
+p579
+(ihappydoclib.parseinfo.imports
+ImportInfo
+(dp580
+S'_named_imports'
+p581
+(dp582
+S'types'
+(lp583
+S'InstanceType'
+aS'ListType'
+aS'IntType'
+aS'LongType'
+assS'_straight_imports'
+p584
+(lsbsg22
+g23
+sg24
+S'""" methods to manipulate finite-state automata\n\nThis module defines an FSA class, for representing and operating on\nfinite-state automata (FSAs). FSAs can be used to represent regular\nexpressions and to test sequences for membership in the languages\ndescribed by regular expressions.\n\nFSAs can be deterministic or nondeterministic, and they can contain\nepsilon transitions. Methods to determinize an automaton (also\neliminating its epsilon transitions), and to minimize an automaton,\nare provided.\n\nThe transition labels for an FSA can be symbols from an alphabet, as\nin the standard formal definition of an FSA, but they can also be\ninstances which represent predicates. If these instances implement\ninstance.matches(), then the FSA nextState() function and accepts()\npredicate can be used. If they implement instance.complement() and\ninstance.intersection(), the FSA can be be determinized and minimized,\nto find a minimal deterministic FSA that accepts an equivalent\nlanguage.\n\n\nQuick Start\n----------\nInstances of FSA can be created out of labels (for instance, strings)\nby the singleton() function, and combined to create more complex FSAs\nthrough the complement(), closure(), concatenation(), union(), and\nother constructors. For example, concatenation(singleton(\'a\'),\nunion(singleton(\'b\'), closure(singleton(\'c\')))) creates an FSA that\naccepts the strings \'a\', \'ab\', \'ac\', \'acc\', \'accc\', and so on.\n\nInstances of FSA can also be created with the compileRE() function,\nwhich compiles a simple regular expression (using only \'*\', \'?\', \'+\',\n\'|\', \'(\', and \')\' as metacharacters) into an FSA. For example,\ncompileRE(\'a(b|c*)\') returns an FSA equivalent to the example in the\nprevious paragraph.\n\nFSAs can be determinized, to create equivalent FSAs (FSAs accepting\nthe same language) with unique successor states for each input, and\nminimized, to create an equivalent deterministic FSA with the smallest\nnumber of states. FSAs can also be complemented, intersected, unioned,\nand so forth as described under \'FSA Functions\' below.\n\n\nFSA Methods\n-----------\nThe class FSA defines the following methods.\n\nAcceptance\n``````````\nfsa.nextStates(state, input)\n  returns a list of states\nfsa.nextState(state, input)\n  returns None or a single state if\n  |nextStates| <= 1, otherwise it raises an exception\nfsa.nextStateSet(states, input)\n  returns a list of states\nfsa.accepts(sequence)\n  returns true or false\n\nAccessors and predicates\n````````````````````````\nisEmpty()\n  returns true iff the language accepted by the FSA is the empty language\nlabels()\n  returns a list of labels that are used in any transition\nnextAvailableState()\n  returns an integer n such that no states in the FSA\n  are numeric values >= n\n\nReductions\n``````````\nsorted(initial=0)\n  returns an equivalent FSA whose states are numbered\n  upwards from 0\ndeterminized()\n  returns an equivalent deterministic FSA\nminimized()\n  returns an equivalent minimal FSA\ntrimmed()\n  returns an equivalent FSA that contains no unreachable or dead\n  states\n\nPresentation\n````````````\ntoDotString()\n  returns a string suitable as *.dot file for the \'dot\'\n  program from AT&T GraphViz\nview()\n  views the FSA with a gs viewer, if gs and dot are installed\n\n\nFSA Functions\n------------\nConstruction from FSAs\n``````````````````````\ncomplement(a)\n  returns an fsa that accepts exactly those sequences that its\n  argument does not\nclosure(a)\n  returns an fsa that accepts sequences composed of zero or more\n  concatenations of sequences accepted by the argument\nconcatenation(a, b)\n  returns an fsa that accepts sequences composed of a\n  sequence accepted by a, followed by a sequence accepted by b\ncontainment(a, occurrences=1)\n  returns an fsa that accepts sequences that\n  contain at least occurrences occurrences of a subsequence recognized by the\n  argument.\ndifference(a, b)\n  returns an fsa that accepts those sequences accepted by a\n  but not b\nintersection(a, b)\n  returns an fsa that accepts sequences accepted by both a\n  and b\niteration(a, min=1, max=None)\n  returns an fsa that accepts sequences\n  consisting of from min to max (or any number, if max is None) of sequences\n  accepted by its first argument\noption(a)\n  equivalent to union(a, EMPTY_STRING_FSA)\nreverse(a)\n  returns an fsa that accepts strings whose reversal is accepted by\n  the argument\nunion(a, b)\n  returns an fsa that accepts sequences accepted by both a and b\n\nPredicates\n``````````\nequivalent(a, b)\n  returns true iff a and b accept the same language\n\nReductions (these equivalent to the similarly-named methods)\n````````````````````````````````````````````````````````````\ndeterminize(fsa)\n  returns an equivalent deterministic FSA\nminimize(fsa)\n  returns an equivalent minimal FSA\nsort(fsa, initial=0)\n  returns an equivalent FSA whose states are numbered from\n  initial\ntrim(fsa)\n  returns an equivalent FSA that contains no dead or unreachable\n  states\n\nConstruction from labels\n````````````````````````\ncompileRE(string)\n  returns an FSA that accepts the language described by\n  string, where string is a list of symbols and \'*\', \'+\', \'?\', and \'|\' operators,\n    with \'(\' and \')\' to control precedence.\nsequence(sequence)\n  returns an fsa that accepts sequences that are matched by\n  the elements of the argument. For example, sequence(\'abc\') returns an fsa that\n  accepts \'abc\' and [\'a\', \'b\', \'c\'].\nsingleton(label)\n  returns an fsa that accepts singletons whose elements are\n  matched by label. For example, singleton(\'a\') returns an fsa that accepts only\n  the string \'a\'.\n\n\nFSA Constants\n------------\nEMPTY_STRING_FSA is an FSA that accepts the language consisting only\nof the empty string.\n\nNULL_FSA is an FSA that accepts the null language.\n\nUNIVERSAL_FSA is an FSA that accepts S*, where S is any object.\n\n\nFSA instance creation\n---------------------\nFSA is initialized with a list of states, an alphabet, a list of\ntransition, an initial state, and a list of final states. If fsa is an\nFSA, fsa.tuple() returns these values in that order, i.e. (states,\nalphabet, transitions, initialState, finalStates). They\'re also\navailable as fields of fsa with those names.\n\nEach element of transition is a tuple of a start state, an end state,\nand a label: (startState, endSTate, label).\n\nIf the list of states is None, it\'s computed from initialState,\nfinalStates, and the states in transitions.\n\nIf alphabet is None, an open alphabet is used: labels are assumed to\nbe objects that implements label.matches(input), label.complement(),\nand label.intersection() as follows:\n\n    - label.matches(input) returns true iff label matches input\n    - label.complement() returnseither a label or a list of labels which,\n        together with the receiver, partition the input alphabet\n    - label.intersection(other) returns either None (if label and other don\'t\n        both match any symbol), or a label that matches the set of symbols that\n        both label and other match\n\nAs a special case, strings can be used as labels. If a strings \'a\' and\n\'b\' are used as a label and there\'s no alphabet, \'~a\' and \'~b\' are\ntheir respective complements, and \'~a&~b\' is the intersection of \'~a\'\nand \'~b\'. (The intersections of \'a\' and \'b\', \'a\' and \'~b\', and \'~a\'\nand \'b\' are, respectively, None, \'a\', and \'b\'.)\n\n\nGoals\n-----\nDesign Goals:\n\n- easy to use\n- easy to read (simple implementation, direct expression of algorithms)\n- extensible\n\nNon-Goals:\n\n- efficiency\n"""'
+sg25
+S'fsa'
+sg26
+Nsg27
+g319
+sg28
+(dp585
+S'include_comments'
+p586
+I1
+sS'cacheFilePrefix'
+p587
+S'.happydoc.'
+p588
+sS'useCache'
+p589
+I1
+sS'docStringFormat'
+p590
+S'StructuredText'
+p591
+ssg29
+g5
+sg30
+g31
+sg42
+S''
+sbt.
+
+===== FSChartParser.py =====
+# Module FSChartParser -- finite-state chart parser and grammar compilation utilities
+
+"""ChartParser is a chart parser that uses finite-state automata to
+recognize grammar rules.
+
+ChartParser is initialized with a grammar, represented as a list of
+rules. Each rule is either a categorizing automaton (defined below),
+or a tuple (lhs, automaton), where each lhs is a category and each
+automaton recognizes a language over terminals, and nonterminals. In
+the latter case, the tuple is compiled to a categorizing automaton.
+
+A categorizing automaton is an automaton which also maps each final
+state to a list of categories, which index the languages that
+categorize a sequence that leads to that final state. A categorizing
+automaton can be used to simultaneously apply a number of regular
+grammars to a single input sequence, and categorize each subsequence
+according to each grammar. Categorizing automata are represented by
+instances of class CategorizingAutomaton, and created by
+compileCategorizingAutomaton, which takes a list of (lhs, automaton)
+rules and constructs a single categorizing automaton which categorizes
+inputs according to all the rules simultaneously.
+
+The chart parser operates on instances of Constituent, which has a
+category, a start index, an end index, and a list of children, which
+are also constituents.
+
+Example
+--------
+    >>> RULES = map(lambda (lhs, rhs):(lhs, FSA.compileRE(rhs, multichar=1)), [
+            ('S', 'NP VP'),
+            ('NP', "det? adj* noun+"),
+            ('NP', 'noun of noun'),
+            ('VP', 'verb NP')])
+    >>> parser = ChartParser(compileRules(RULES))
+    >>> print parser.parseString('noun verb noun', multichar=1).constituents()
+    [S[NP[noun] VP[verb NP[noun]]]]
+    >>> print parser.parseString('det adj noun noun verb adj noun', multichar=1).constituents()
+    [S[NP[det adj noun noun] VP[verb NP[adj noun]]]]
+    >>> parser = ChartParser(compileRules(RULES, optimize=1))
+    >>> print parser.parseString('noun verb noun', multichar=1)
+    [S[NP[noun] VP[verb NP[noun]]]]
+"""
+
+__author__  = "Oliver Steele", 'steele@osteele.com'
+
+import FSA
+from types import ListType, StringType, TupleType
+
+class ChartParser:
+    TRACE = 0
+    TRACE_MATCHES = 0
+    TRACE_CONSTITUENTS = 0
+    
+    #
+    # Initialization
+    #
+    def __init__(self, rules):
+        """Each rule is a sequence of f, fsa; where f is applied to (fsa,
+        state, children, start, end) to create a constituent or None, and fsa
+        is a finite-state automaton as defined in FSA."""
+        self.automata = rules
+        self.firstConstituentsOnly = 1
+    
+    def initializeChart(self, n):
+        self.constituentMaps = map(lambda n:{}, range(n))
+        self.edges = map(lambda n:[], range(n + 1))
+        #for automaton in self.automata:
+        #   for i in range(n):
+        #       self.addEdge((automaton, automaton.initialState, i, i, []))
+    
+    #
+    # Parsing
+    #
+    def parse(self, tokens):
+        """Preterminals should be a sequence of tokens. Parse it. If
+        there's a set of spanning parses whose categories match the categories
+        in the first grammar rule, return them. For more general queries
+        (partial parses), use the query methods on the parser."""
+        self.tokens = tokens
+        self.initializeChart(len(tokens))
+        self.finalIndex = len(tokens)
+        for i in range(len(tokens)):
+            for automaton in self.automata:
+                self.addEdge(automaton, automaton.initialState, i, i, [])
+        return self
+    
+    def parseString(self, sentence, multichar=0):
+        """Parse the string argument, with one letter per preterminal
+        constituent. If multichar is true, the string is split at whitespace
+        and the intervening tokens are used as preterminals instead."""
+        if multichar:
+            import string
+            tokens = string.split(sentence)
+        else:
+            tokens = sentence
+        return self.parse(tokens)
+    
+    #
+    # Queries
+    #
+    def constituents(self, categories=None, complete=0):
+        """Return a list of all the non-preterminal constituents in the chart.
+        If categories is not false, include only constituents with a category
+        in categories."""
+        results = []
+        for constituentMap in self.constituentMaps:
+            constituents = constituentMap.values()
+            if categories:
+                constituents = filter(lambda c,cats=categories:c.category in cats, constituents)
+            constituents.sort(lambda a, b:-cmp(a.length(), b.length()))
+            results.extend(constituents)
+        if complete:
+            results = filter(lambda c, final=self.finalIndex: c.start == 0 and c.end == final, results)
+        return results
+    
+    def constituentsAt(self, index):
+        """Return a list of constituents at index."""
+        return filter(self.constituentMaps[index].values())
+    
+    def longestDisjointConstituents(self, categories=None):
+        """Return a sequence of disjoint constituents such that each
+        constituent is one of the longest constituents at its index position.
+        The algorithm is myopic and locally greedy: it won't choose a shorter
+        constituent in order to get the whole sequence to come out longer, and
+        it won't even choose between two constituents of equal length in order
+        to get a longer overall sequence."""
+        results = []
+        index = 0
+        while index < len(self.constituentMaps):
+            constituents = self.constituentsAt(index)
+            if categories:
+                constituents = filter(lambda c,cats=categories:c.category in cats, constituents)
+            if constituents:
+                constituents.sort(lambda a, b:-cmp(a.end, b.end))
+                best = constituents[0]
+                results.append(best)
+                index = best.end
+            else:
+                index = index + 1
+        return results
+    
+    #
+    # Chart manipulation
+    #
+    def addConstituent(self, constituent, start, end):
+        if self.TRACE or self.TRACE_CONSTITUENTS:
+            print 'adding', constituent
+        if self.firstConstituentsOnly:
+            key = constituent.category, start, end
+            if self.constituentMaps[start].get(key):
+                return
+            self.constituentMaps[start][key] = constituent
+        for (automaton, state, left, right, children) in self.edges[start]:
+            assert right == start
+            successors = automaton.nextStates(state, constituent)
+            if successors and self.TRACE_MATCHES:
+                print '\tmatched:'
+                print '\t\t', automaton.atStateString(state), '->'
+            elif self.TRACE:
+                if successors:
+                    print '\tmatched: \n\t\t%s -> %s' % (automaton.atStateString(state), successors)
+                else:
+                    assert automaton.atStateString(state)
+                    print '\tdidn\'t match: \n\t\t%s' % (automaton.atStateString(state))
+            for successor in successors:
+                if self.TRACE_MATCHES:
+                    print '\t\t', automaton.atStateString(successor)
+                self.addEdge(automaton, successor, left, end, children + [constituent])
+    
+    def addEdge(self, automaton, state, start, end, children):
+        if automaton.stateMatchesConstituents(state):
+            edge = automaton, state, start, end, children
+            self.edges[end].append(edge)
+        for category in automaton.getStateCategories(state):
+            constituent = Constituent(category, children, start, end)
+            try:
+                constituent.source = automaton
+            except AttributeError:
+                pass
+            self.addConstituent(constituent, start, end)
+        if end < len(self.tokens):
+            token = self.tokens[end]
+            constituents = self.constituentMaps[end].values()
+            for successor in automaton.nextStates(state, token):
+                self.addEdge(automaton, successor, start, end + 1, children + [token])
+            for constituent in constituents:
+                for successor in automaton.nextStates(state, constituent):
+                    self.addEdge(automaton, successor, start, constituent.end, children + [constituent])
+    
+    
+    #
+    # Presentation
+    #
+    def toDotString(self, includeActiveEdges=0):
+        """Returns a string that can be printed by the DOT tool at
+        http://www.research.att.com/sw/tools/graphviz/ ."""
+        import string
+        output = []
+        output.append('digraph finite_state_machine {');
+        output.append('\t0 [style = bold];' )
+        output.append('\tnode [shape = doublecircle]; ' + `self.finalIndex` + ';' );
+        output.append('\tnode [shape = circle];');
+        output.append('\trankdir=LR;');
+        if includeActiveEdges:
+            for edges in self.edges:
+                for (automaton, state, start, end, children) in edges:
+                    label = string.replace(automaton.atStateString(state, wrap=20), '\n', '\\n')
+                    output.append('\t%s -> %s [style=dotted,label="%s"];' % (start, end, label) )
+        for constituents in self.constituentMaps:
+            items = map(lambda c:(c.start, c.end, c), constituents.values())
+            items.sort()
+            for item in items:
+                output.append('\t%s -> %s [label="%s"];' % item)
+        output.append('}');
+        return string.join(output, '\n')
+    
+    def view(self, includeActiveEdges=1):
+        FSA.view(self.toDotString(includeActiveEdges=includeActiveEdges))
+
+
+#
+# Chart classes
+#
+
+class Constituent:
+    def __init__(self, category, children, start, end):
+        self.category = category
+        self.children = children
+        self.start = start
+        self.end = end
+    
+    def leaves(self):
+        if self.children:
+            leaves = []
+            for child in self.children:
+                if hasattr(child, 'leaves'):
+                    leaves.extend(child.leaves())
+                else:
+                    leaves.append(child)
+            return leaves
+        else:
+            return [self]
+    
+    def __repr__(self):
+        import string
+        if self.children:
+            def tokenStr(token):
+                return (hasattr(token, 'token') and str(token.token)) or str(token)
+            if 1: #flatten the printed representation
+                return self.category + '[' + string.join(map(tokenStr, self.leaves())) + ']'
+            else:
+                return self.category + '[' + string.join(map(str, self.children or []), ' ') + ']'
+        else:
+            return self.category
+    
+    def length(self):
+        return self.end - self.start
+
+
+
+#
+# Class CategorizingAutomaton
+#
+
+class CategorizingAutomaton(FSA.FSA):
+    """A categorizing automaton is a finite-state automaton that additionally
+    maps each final state into a set of categories. A categorizing automataon
+    can be used to simultaneously recognize and categorize sequences according
+    to a number of languages."""
+    
+    def __init__(*args, **keys):
+        apply(FSA.FSA.__init__, args, keys)
+        self = args[0]
+        self.setStateCategoriesMapping({})
+    
+    def coerce(self, klass):
+        coercion = FSA.FSA.coerce(self, klass)
+        coercion.setStateCategoriesMapping(self.getStateCategoriesMapping())
+        return coercion
+    
+    #
+    # Predicates
+    #
+    isCategorizingAutomaton = 1
+    
+    
+    #
+    # State categories
+    #
+    def categories(self):
+        """Return a list of categories that this automaton will categorize
+        into."""
+        categories = []
+        for set in self.getStateCategoriesMapping().values():
+            for category in set:
+                if category not in categories:
+                    categories.append(category)
+        return categories
+    
+    def getStateCategories(self, state):
+        return self.stateCategories[state]
+    
+    def addStateCategory(self, state, category):
+        categories = self.stateCategories[state]
+        if category not in categories:
+            self.stateCategories[state] = categories + [category]
+    
+    def getStateCategoriesMapping(self):
+        mapping = {}
+        for state in self.states:
+            mapping[state] = self.getStateCategories(state)
+        return mapping
+    
+    def setStateCategoriesMapping(self, mapping):
+        self.stateCategories = self.makeStateTable([])
+        for state, categories in mapping.items():
+            self.stateCategories[state] = categories
+        
+    def setFinalCategory(self, category):
+        """Set all the final states to categorize to this category."""
+        self.stateCategories = self.makeStateTable([])
+        for state in self.finalStates:
+            self.addStateCategory(state, category)
+        
+    
+    #
+    # Accessors
+    #
+    def computeStateMatchesConstituents(self, state):
+        return 1
+    
+    def stateMatchesConstituents(self, state):
+        try:
+            isConstituentTestMap = self.isConstituentTestMap
+        except AttributeError:
+            isConstituentTestMap = [None] * (reduce(max, self.states) + 1)
+            for state in self.states:
+                isConstituentTestMap[state] = self.computeStateMatchesConstituents(state)
+            self.isConstituentTestMap = isConstituentTestMap
+        return isConstituentTestMap[state]
+    
+    
+    #
+    # Presentation template overrides
+    #
+    def additionalTransitionInfoString(self, transition):
+        result = FSA.FSA.additionalTransitionInfoString(self, transition)
+        categories = self.getStateCategories(transition[1])
+        if categories:
+            import string
+            result = (result and result + ' ' or '') + `categories`#string.join(map(str, categories), ', ')
+        return result
+        
+    def stateLabelString(self, state):
+        # overrides the method in FSA, to include categorizing states in dot diagrams
+        if self.categoriesFor(state):
+            import string
+            return `state` + '\n' + string.join(map(str, self.categoriesFor(state)), ', ')
+    
+    def atStateString(self, state, wrap=None):
+        try:
+            import REUtils
+            str = REUtils.decompileRE(self, dottedStates=[state], wrap=wrap, sep=self.tokenSeparator())
+        except ImportError:
+            str = "%s @ %s" % (self, state)
+        if len(self.categories()) == 1:
+            str = '%s => %s' % (self.categories()[0], str)
+        return str
+    
+    def tokenSeparator(self):
+        return ' '
+    
+    
+    #
+    # Conversion
+    #
+    def toFSA(self, labelConstructor=lambda s:'=>' + s):
+        """Return an FSA that corresponds to the categorizing automaton that is the
+        argument, except that final state categories have been replaced by
+        transitions labeled with a transformation of those categories."""
+        states, alphabet, transitions, initial, finals = self.tuple()
+        newFinal = self.nextAvailableState()
+        transitions = transitions[:]
+        for state, categories in self.getStateCategoriesMapping().items():
+            for category in categories:
+                transitions.append((state, newFinal, labelConstructor(category)))
+        return self.copy(states + [newFinal], alphabet, transitions, initial, [newFinal])
+    
+    
+    #
+    # Decision Functions
+    #
+    def buildDecisionTree(self, pairs):
+         if pairs:
+            test, state = pairs[0]
+            if test.isUnconditional():
+                return (None, state, state)
+            term = test.terms()[0]
+            complement = term.complement()
+            positives, negatives = [], []
+            for test, state in pairs:
+                if term in test.terms():
+                    positives.append((test.build(filter(lambda x, term=term:x != term, test.terms())), state))
+                else:
+                    negatives.append((test.build(filter(lambda x, term=complement:x != term, test.terms())), state))
+            return (term, self.buildDecisionTree(positives), self.buildDecisionTree(negatives))
+    
+    def buildDecisionTreeDecider(self, pairs):
+        def decisionTreeDecider(constituent, tree=self.buildDecisionTree(pairs)):
+            while tree:
+                test, positive, negative = tree
+                if test:
+                    if test.matches(constituent):
+                        tree = positive
+                    else:
+                        tree = negative
+                else:
+                    return positive
+        return decisionTreeDecider
+    
+    def buildSerialDecider(self, pairs):
+        if pairs:
+            def serialDecider(constituent, pairs=pairs):
+                for  test, state in pairs:
+                    if test.matches(constituent):
+                        return state
+            return serialDecider
+        else:
+            return lambda constituent:None
+    
+    def buildDecisionFunctions(self):
+        assert getattr(self, '_isDeterminized', 0)
+        decisionFunctions = [None] * (reduce(max, self.states) + 1)
+        for state in self.states:
+            decisionFunctions[state] = self.buildDecisionFunction(state)
+        self.decisionFunctions = decisionFunctions
+        self.nextState = self.nextStateUsingDecisionFunctions
+        self.nextStates = self.nextStatesUsingDecisionFunctions
+    
+    def nextStateUsingDecisionFunctions(self, state, input):
+        successor = self.decisionFunctions[state](input)
+        return successor
+    
+    def nextStatesUsingDecisionFunctions(self, state, input):
+        successor = self.decisionFunctions[state](input)
+        return successor is not None and [successor] or []
+    
+    #
+    # Accepting
+    #
+    def labelMatches(self, label, constituent):
+        """Override the implementation in FSA, so that strings can be used as
+        labels that match the constituent's categories."""
+        if type(label) == StringType:
+            return label == constituent or hasattr(constituent, 'category') and label == constituent.category
+        else:
+            return FSA.FSA.labelMatches(self, label, constituent)
+
+
+#
+# Grammar compilation
+#
+
+def compileRule(rule, defaultCategory='S'):
+    if getattr(rule, 'isCategorizingAutomaton', 0):
+        automaton = rule
+    elif getattr(rule, 'isFSA', 0):
+        automaton = rule.coerce(CategorizingAutomaton)
+        automaton.setFinalCategory(defaultCategory)
+    elif type(rule) == TupleType:
+        lhs, rhs = rule
+        if type(rhs) == ListType:
+            rhs = FSA.sequence(rhs)
+        automaton = rhs.coerce(CategorizingAutomaton)
+        automaton.setFinalCategory(lhs)
+    else:
+        raise 'rule must be a (lhs, automaton) or an automaton'
+    return automaton
+
+def compileRules(rules, optimize=0, labelConstructor=None):
+    # Rules is either a list of CategorizingFSAs or (lhs, rhs) pairs, where
+    # each rhs is either a list or an automaton. Turn each pair ino a
+    # CategorizingAutomaton by coercing it and setting the categories of its
+    # final states to the lhs.
+    automata = map(compileRule, rules)
+    if optimize:
+        automata = [combineRules(rules)]
+    return automata
+
+def combineRules(rules, labelConstructor=None):
+    """Create a categorizing automaton from a list of rules. Each rules is a
+    tuple (lhs, rhs), where lhs is the category for sequences recognized by
+    rhs, which is an automaton. lhsLabelConstructor is an expression that
+    converts a category into a label that can be intersected with the labels in
+    the rule automata (the intersection of a category label with any rhs
+    automaton label or with any other category label should be None); it
+    defaults to a function that turns the category 'C' into '=>C'."""
+    
+    lhsMap = {}
+    def construct(rule, labelConstructor=labelConstructor or (lambda s:'=>' + s), lhsMap=lhsMap):
+        automaton = compileRule(rule)
+        for category in automaton.categories():
+            lhsMap[labelConstructor(category)] = category
+        return automaton.toFSA(labelConstructor=labelConstructor)
+    automata = map(construct , rules)
+    fsa = apply(FSA.union, automata).minimized()
+    states0, alpha, transitions0, initial, finals0 = fsa.tuple()
+    transitions = filter(lambda (s0,s1,label), f=lhsMap.get: not f(label), transitions0)
+    finalTransitions= filter(lambda (s0,s1,label), f=lhsMap.get: f(label), transitions0)
+    states = []
+    for s0, s1, _ in transitions:
+        if s0 not in states: states.append(s0)
+        if s1 not in states: states.append(s1)
+    finals = map(lambda (s0,s1,_): s0, finalTransitions)
+    fsa = automata[0].copy(states, alpha, transitions, initial, finals)
+    fsa._isDeterminized = 1
+    for state, _, label in finalTransitions:
+        fsa.addStateCategory(state, lhsMap[label])
+    return fsa
+
+"""
+RULES = map(lambda (lhs, rhs):(lhs, FSA.compileRE(rhs, multichar=1)), [
+        ('S', 'NP VP'),
+        ('NP', "det? adj* noun+"),
+        ('NP', 'noun of noun'),
+        ('VP', 'verb NP')])
+
+parser = ChartParser(compileRules(RULES))
+print parser.parseString('noun verb noun', multichar=1).constituents(complete=1)
+
+parser = ChartParser(compileRules(RULES, optimize=1))
+print parser.parseString('noun verb noun', multichar=1).constituents(complete=1)
+print parser.parseString('det adj noun noun verb adj noun', multichar=1).constituents(complete=1)
+print parser.toDotString()
+print parser.toDotString(includeActiveEdges=1)
+p.view()
+"""
+
+
+===== examples/PatternElement.py =====
+""" module PatternElement --- token tests"""
+
+class PatternElement:
+    fieldNames = ('tag', 'stem', 'token', 'pred')
+    isPatternElement = 1
+    isComplexPatternElement = 0
+    
+    def __init__(self, tag=[], stem=[], token=[], pred=[], quant=None):
+        for name in self.fieldNames:
+            value = list(locals()[name])
+            value.sort()
+            setattr(self, name, tuple(value))
+        self.quant = quant
+    
+    def isExclusiveField(self, fieldName):
+        """These fields of the item being tested can only have one value. """
+        return fieldName in ('tag', 'stem', 'token')
+    
+    def __cmp__(self, other):
+        # this function ends up being called huge numbers of times during FSA
+        # construction, and unrolling the loop as here speeds it up
+        # substantially over using fieldNames
+        return cmp(type(self), type(other)) or cmp(self.__class__, other.__class__) \
+            or cmp(self.tag, other.tag) or cmp(self.stem, other.stem) \
+            or cmp(self.token, other.token) or cmp(self.pred, other.pred)
+
+    def __hash__(self):
+        if hasattr(self, '_cachedHash'):
+            return self._cachedHash
+        value = hash(self.quant)
+        for name in self.fieldNames:
+            value = value ^ hash(getattr(self, name))
+        self._cachedHash = value
+        return value
+
+    def match(self, pt):
+
+        """Return 1 if self matches pt, a PreTerminal. Return 0
+        otherwise. This is a basic match and does not take
+        account of quantifiers, it just checks for token, stem
+        and tag values. The list values on self.token etc are
+        interpreted as disjunctions if the list is not empty and
+        as fully unspecified if the list is empty. There is no
+        negation."""
+
+        if self.token and pt.token not in self.token: return 0
+        if self.stem and pt.stem not in self.stem: return 0
+        if self.tag and pt.tag not in self.tag: return 0
+        if self.pred and not filter(lambda p, pt=pt:p(pt), self.pred): return 0
+        return 1
+    
+    def matches(self, pt):
+        return self.match(pt)
+    
+    def withoutQuantifier(self):
+        if self.quant:
+            return PatternElement(tag=self.tag, stem=self.stem, token=self.token, pred=self.pred)
+        return self
+    
+    def isSingleton(self):
+        return not self.quant
+
+    def isKleeneStar(self):
+        return self.quant == '*'
+
+    def isKleenePlus(self):
+        return self.quant == '+'
+
+    def isOptional(self):
+        return self.quant == '?'
+
+    def asHtmlString(self):
+        string = '<b>[</b> '
+        if self.token: string = string + 'token=' + `self.token` + ' '
+        if self.stem: string = string + 'stem=' + `self.stem` + ' '
+        if self.tag: string = string + 'tag=' + `self.tag` + ' '
+        if self.pred: string = string + 'pred=' + `self.pred` + ' '
+        string = string + ' <b>]</b>'
+        if self.quant: string = string + self.quant
+        return string
+
+
+    def __repr__(self, negated=0):
+        """
+        >>> PatternElement(tag=['NN'])
+        NN
+        >>> PatternElement(tag=['NN', 'NNP'])
+        NN|NNP
+        >>> PatternElement(tag=['NN'], quant='*')
+        NN*
+        >>> PatternElement(tag=['NN', 'NNP'], quant='*')
+        (NN|NNP)*
+        >>> PatternElement(token=['of'])
+        'of'
+        >>> PatternElement(token=['of', 'on'])
+        'of' | 'on'
+        >>> PatternElement(stem=['of'])
+        stem='of'
+        >>> PatternElement(stem=['of', 'on'])
+        stem in ('of', 'on')
+        >>> PatternElement(tag=['NN'],token=['protein'])
+        'protein' & NN
+        >>> PatternElement()
+        ANY
+        """
+        import string
+        tags = collapseAbbreviations(list(self.tag), 'tag')
+        tokens = collapseAbbreviations(self.token, 'token')
+        stems = collapseAbbreviations(self.stem, 'stem')
+        preds = collapseAbbreviations(self.pred, 'pred')
+        s = string.join(map(repr, tokens), ' | ')
+        if self.tag:
+            def tagStr(tag, prefix=negated and '~' or ''):
+                import string
+                s = str(tag)
+                tagChars = string.letters + string.digits + '#_-'
+                if filter(lambda c, tagChars=tagChars:c not in tagChars, s):
+                    s = '#' + s
+                return prefix + s
+            s = s + (s and ' & ' or '') + string.join(map(tagStr, tags), negated and ' & ' or '|') 
+        if self.stem:
+            if s: s = s + ' & '
+            def stemStr(stem, originalStems=self.stem):
+                if stem in originalStems:
+                    return `stem`
+                else:
+                    return str(stem)
+            notStr = negated and 'not ' or ''
+            if len(stems) == 1:
+                stem = stems[0]
+                if stem in self.stem:
+                    eqOp = negated and ' != ' or '='
+                    s = s + 'stem' + eqOp + stemStr(stem)
+                else:
+                    s = s + 'stem ' + notStr + 'in ' + stemStr(stem)
+            else:
+                s = s + 'stem ' + notStr + 'in (' + string.join(map(stemStr, stems), ', ') + ')'
+        if self.pred:
+            def predName(pred, prefix=negated and '~' or ''):
+                try:
+                    return prefix + pred.__name__ + '()'
+                except AttributeError:
+                    return prefix + pred + '()'
+            s = s + (s and ' & ' or '') + string.join(map(predName, preds), negated and ' & ' or ' | ') 
+        if not s:
+            s = 'ANY'
+        if self.quant:
+            if ' ' in s or '|' in s or '&' in s:
+                s = '(' + s + ')'
+            s = s + self.quant
+        return s
+    
+    def isUnconditional(self):
+        return not self.tag and not self.stem and not self.token and not self.pred
+    
+    def terms(self):
+        testers = []
+        for fieldName in self.fieldNames:
+            value = getattr(self, fieldName)
+            if value:
+                testers.append(apply(PatternElement, (), {fieldName: value}))
+        return testers
+    
+    def build(self, terms):
+        return combinePatternTerms(terms)
+    
+    def complement(self):
+        """
+        >>> PatternElement(tag=['a', 'b']).complement().complement() == PatternElement(tag=['a', 'b'])
+        1
+        >>> PatternElement(tag=['a'], stem=['b']).complement()
+        [~a, ~stem='b']
+        >>> PatternElement(tag=['a', 'b']).complement()
+        [~a, ~a & ~stem='b']
+        """
+        complements = self.complements()
+        return len(complements) == 1 and complements[0] or complements
+
+    def complements(self):
+        """Returns the complements as a list, so that callers don't have to normalize it."""
+        firstKey = None
+        remainder = {}
+        for fieldName in self.fieldNames:
+            value = getattr(self, fieldName)
+            if value:
+                if not firstKey:
+                    firstKey, firstValue = fieldName, value
+                else:
+                    remainder[fieldName] = value
+        if firstKey:
+            firstTester = apply(PatternElement, (), {firstKey: firstValue})
+            firstComplement = ComplexPatternElement(None, firstTester)
+            complements = [firstComplement]
+            if remainder.keys():
+                for complement in apply(PatternElement, (), remainder).complements():
+                    complements.append(firstTester.intersection(complement))
+            return complements
+        else:
+            return []
+    
+    def intersection(self, other):
+        """
+        >>> PatternElement(tag=['a', 'b']).intersection(PatternElement(tag=['b', 'c'])) == PatternElement(tag=['b'])
+        1
+        >>> PatternElement(tag=['a']).intersection(PatternElement(tag=['b']))
+        """
+        if not getattr(other, 'isPatternElement', 0) or other.isComplexPatternElement:
+            return other.intersection(self)
+        if self.isUnconditional():
+            return other
+        if other.isUnconditional():
+            return self
+        #if self == other: return self
+        fields = {}
+        for name in self.fieldNames:
+            a, b = getattr(self, name), getattr(other, name)
+            if a and b:
+                if name == 'pred':
+                    c = listUnion(a, b)
+                else:
+                    c = listIntersection(a, b)
+                if not c:
+                    return None
+            else:
+                c = a or b
+            fields[name] = c
+        fields = simplifyFieldValues(fields)
+        if not fields:
+            return None
+        return apply(PatternElement, (), fields)
+
+
+class ComplexPatternElement :
+    """A ComplexPatternElement represents the intersection of a PatternTest,
+    with the complements of a set of PatternTests. A ComplexPatternElement has
+    a required PatternTest, and an excluded PatternTest. It's true of a token
+    if the required test is true, and each field of the excluded test is false.
+    (Note that it's just using the excluded object as a container for its field
+    tests, without preserving its semantics --- ALL the tests in the excluded
+    object must be false for the ComplexPatternElement to test true, whereas
+    the excluded object itself will test false if ANY of its tests are
+    false."""
+    TRACE_INTERSECTIONS = 0
+    isPatternElement = 1
+    isComplexPatternElement = 1
+    
+    def __init__(self, required, excluded):
+        assert not excluded.isUnconditional(), "ComplexPatternElement is really a PatternElement"
+        self.required = required or PatternElement()
+        self.excluded = excluded
+        self.excludedTests = self.excluded.terms()
+    
+    def __cmp__(self, other):
+        return cmp(type(self), type(other)) or cmp(self.__class__, other.__class__) or cmp(self.required, other.required) \
+            or cmp(self.excluded, other.excluded)
+    
+    def __hash__(self):
+        return hash(self.required) ^ hash(self.excluded)
+    
+    def __repr__(self):
+        str = ''
+        if not self.required.isUnconditional():
+            str = `self.required`
+        for tester in self.excludedTests:
+            testStr = tester.__repr__(negated=1)
+            #if filter(lambda c:c in ' &|', testStr):
+            #   testStr = '(' + testStr + ')'
+            str = str + (str and ' & ') + testStr
+        return str
+    
+    def isUnconditional(self):
+        return 0
+    
+    def match(self, pt):
+        if not self.required.match(pt):
+            return 0
+        for tester in self.excludedTests:
+            if tester.match(pt):
+                return 0
+        return 1
+    
+    def matches(self, pt):
+        return self.match(pt)
+    
+    def terms(self):
+        return self.required.terms() + map(lambda term:term.complement(), self.excludedTests)
+    
+    def build(self, terms):
+        return combinePatternTerms(terms)
+    
+    def complements(self):
+        complements = self.required.complements()
+        running = self.required
+        for tester in self.excludedTests:
+            complements.append(running.intersection(tester))
+            running = running.intersection(tester.complement()) 
+        return complements
+    
+    def complement(self):
+        """
+        >>> PatternElement(tag=['b']).complement()
+        ~b
+        """
+        complements = self.complements()
+        if len(complements) == 1:
+            return complements[0]
+        else:
+            return complements
+    
+    def intersection(self, other):
+        """
+        >>> PatternElement(tag=['a', 'b']).intersection(PatternElement(tag=['a']))
+        a
+        >>> PatternElement(tag=['a', 'b']).intersection(PatternElement(tag=['a']).complement())
+        b
+        >>> PatternElement(tag=['a', 'b']).intersection(PatternElement(tag=['a', 'b']).complement())
+        >>> PatternElement(tag=['a']).intersection(PatternElement(tag=['b']).complement())
+        a & ~b
+        >>> PatternElement(tag=['a']).complement().intersection(PatternElement(tag=['b']).complement())
+        ~(a|b)
+        >>> PatternElement(tag=['a']).complement().intersection(PatternElement(token=['b']).complement())
+        ~('b' & a)
+        >>> ComplexPatternElement(PatternElement(tag=['a'], token=['b']), PatternElement(tag=['c'], token=['d'])).complement()
+        ['d' & c, ~a, ~'b']
+        >>> ComplexPatternElement(PatternElement(tag=['a']), PatternElement(tag=['b'])).intersection(PatternElement(tag=['c']))
+        """
+        if not getattr(other, 'isPatternElement', 0):
+            return other.intersection(self)
+        try:
+            cache = self._intersectionCache
+        except AttributeError:
+            cache = self._intersectionCache = {}
+        requiredFieldValues = {}
+        excludedFieldValues = {}
+        otherRequired, otherExcluded = other, None
+        if other.isComplexPatternElement:
+            otherRequired, otherExcluded = other.required,other.excluded
+        for name in self.required.fieldNames:
+            these = getattr(self.required, name)
+            those = getattr(otherRequired, name)
+            if these and those:
+                required = listIntersection(these, those)
+            else:
+                required = these or those
+            excluded = getattr(self.excluded, name)
+            if otherExcluded:
+                excluded = listUnion(excluded, getattr(otherExcluded, name))
+            required = listDifference(required, excluded)
+            if self.TRACE_INTERSECTIONS:
+                print name, required, excluded
+            if not required and (these or those):
+                return None
+            if required and self.required.isExclusiveField(name):
+                excluded = ()
+            requiredFieldValues[name] = required
+            excludedFieldValues[name] = excluded
+        requiredFieldValues = simplifyFieldValues(requiredFieldValues)
+        if not requiredFieldValues:
+            return None
+        required = apply(PatternElement, (), requiredFieldValues)
+        excluded = apply(PatternElement, (), excludedFieldValues)
+        if excluded.isUnconditional():
+            cache[other] = required
+            return required
+        else:
+            result = ComplexPatternElement(required, excluded)
+            cache[other] = result
+            return result
+
+
+#
+# PatternTest construction
+#
+def combinePatternTerms(terms):
+    requiredInitargs = {}
+    excludedInitargs = {}
+    for term in terms:
+        if getattr(term, 'isComplexPatternElement', 0):
+            initargs, basis = excludedInitargs, term.excluded
+        else:
+            initargs, basis = requiredInitargs, term
+        for fieldName in basis.fieldNames:
+            value = getattr(basis, fieldName)
+            if value:
+                assert not initargs.get(fieldName)
+                initargs[fieldName] = value
+    required = apply(PatternElement, (), requiredInitargs)
+    excluded = apply(PatternElement, (), excludedInitargs)
+    if excluded.isUnconditional():
+        return required
+    else:
+        return ComplexPatternElement(required, excluded)
+
+
+#
+# PatternTest simplification
+#
+POSSIBLE_STEM_TAGS = {}
+POSSIBLE_STEM_SET_TAGS = {}
+
+def possibleStemTags(stem):
+    from types import ListType
+    tags = POSSIBLE_STEM_TAGS.get(stem)
+    if tags:
+        return tags
+    from stemmer import unstemToken
+    from ourtagger import tag
+    from htagger import possibleTags
+    tags = []
+    for token in unstemToken(stem):
+        tags = listUnion(tags, possibleTags(tag([token])[0]))
+    POSSIBLE_STEM_SET_TAGS[stem] = tags
+    return tags
+
+def possibleStemSetTags(stems):
+    from types import ListType
+    if type(stems) == ListType:
+        stems = tuple(stems)
+    tags = POSSIBLE_STEM_SET_TAGS.get(stems)
+    if tags:
+        return tags
+    tags = []
+    for stem in stems:
+        tags = listUnion(tags, possibleStemTags(stem))
+    POSSIBLE_STEM_SET_TAGS[stems] = tags
+    return tags
+
+def simplifyFieldValues(fields):
+    tokens = fields.get('token')
+    stems = fields.get('stem')
+    tags = fields.get('tag')
+    if stems and tags:
+        tags = listIntersection(tags, possibleStemSetTags(stems))
+        if not tags:
+            return None
+        fields['tag'] = tags
+    #if tokens and stems:
+    #   from stemmer import stemWord
+    #   possibleStems = []
+    #   for token in tokens:
+    #       possibleStems.append(stemWord(token))
+    #   stems = listIntersection(stems, possibleStems)
+    #   tokens = filter(lambda token, stems=stems, stemWord=stemWord: stemWord(token) in stems, tokens)
+    #   if not tokens: return None
+    #   fields['tokens'] = tokens
+    #   fields['stems'] = stems
+    return fields
+
+
+
+#
+# Abbreviations
+#
+TAG_ABBREVIATIONS = {}  # fieldName -> array of (name, tagset), sorted by decreasing length of tagset
+
+def defineAbbreviation(name, tags, fieldName='tag'):
+    global TAG_ABBREVIATIONS
+    abbreviations = TAG_ABBREVIATIONS.get(fieldName, [])
+    abbreviations = filter(lambda (name, tags), this=name:name != this, abbreviations)
+    abbreviations.append((name, tags))
+    abbreviations.sort(lambda a,b:-cmp(len(a[1]), len(b[1])))
+    TAG_ABBREVIATIONS[fieldName] = abbreviations
+
+def collapseAbbreviations(tags, fieldName='tag'):
+    for (name, tagset) in TAG_ABBREVIATIONS.get(fieldName, []):
+        if listIncludes(tags, tagset):
+            tags = [name] + listDifference(list(tags), tagset)
+    return tags
+
+def expandAbbreviations(tags, fieldName='tag'):
+    # This isn't currently used --- tag abbreviations are only used for display
+    index  = 0
+    while index < len(tags):
+        tag = tags[index]
+        increment = 1
+        for (name, tagset) in TAG_ABBREVIATIONS.get(fieldName, []):
+            if tag == name:
+                tags[index:index + 1] = tagset
+                increment = 0
+                break
+        index = index + increment
+    return tags
+
+
+#
+# Utility Functions
+#
+def listDifference(a, b):
+    c = []
+    for e in a:
+        if e not in b:
+            c.append(e)
+    return c
+
+def listIntersection(a, b):
+    return filter(lambda e, b=b:e in b, a)
+
+def listIncludes(a, b):
+    for item in b:
+        if item not in a:
+            return 0
+    return 1
+
+def listUnion(a, b):
+    return list(a) + list(listDifference(b, a))
+
+
+===== PatternScanner.py =====
+"""Module PatternScanner -- methods that construct grammars, and that use them
+to scan a document for constituents
+
+Grammar compilation
+-------------------
+compilePatternGrammar(rules, optimize=0, defaultCategory=None)
+  Returns an object that can be used as an argument to the parsing
+  functions. If the optimize argument is true, grammar compilation
+  takes longer but parsing with the resulting grammar is much faster
+  (by roughly an order of magnitude).
+
+A grammar rule is one of the following:
+
+- a Pattern whose action is a CreateConstituentAction enclosing
+  a category symbol
+
+- any other Pattern, if defaultCategory is supplied. (The pattern
+  is used to create constituents of category defaultCategory, in
+  this case.)
+
+- a pair of a category symbol and a Pattern
+
+- or a tuple (cat, fsa), where cat is a ategory string and fsa is an
+  instance of FSA.FSA.
+
+Parsing functions
+-----------------
+The following functions all parse a sentence or a set of sentences.
+parseString and matchingDocumentConstituents return a list of
+constituents. If categories is false, all constituents are returned.
+Otherwise, only constituents in a category included in categories are
+returned.
+
+Grammar is a grammar created via one of the grammar compilation
+functions above, and document is a MedlineDocument.
+
+parseString(grammar, string, categories=None)
+  Tokenizes, tags, and stems string, and applies grammar to
+  it. Returned categories are sorted by decreasing length, so that,
+  for example, ::
+
+  (parseString(GRAMMAR, string, ['reln']) + [None])[0]
+
+  returns the longest constituent whose category is 'reln', or None if
+  there is no such constituent. This function is intended for testing.
+
+parseDocument(grammar, document, categories=None)
+  Applies the grammar to each sentence in document's abstract, and
+  returns a list of non-preterminal constituents.
+
+  (Currently parseString returns *all* constituents in the category
+  list, and parseDocument returns all *disjoint* categories. I'll
+  probably break the functionality to look for disjoint categories out
+  into a separate function, in order to rationalize this.)
+
+matchingDocumentSentences(grammar, document, categories)
+  Returns a list of sentence from document's abstract such that some
+  constituent in the sentence is of a category in the category list.
+  This function is intended to be used in grammar debugging, to
+  compare the set of sentenced matched by one grammar (say, a grammar
+  that looked for the word 'inhibit') with another (say, a more
+  complete set of entity/relation patterns, that therefore might miss
+  some sentences matched by the first grammar).
+
+Example
+--------
+>>> from Patterns import inhibitor_patterns, inhibit_patterns
+>>> GRAMMAR = compilePatternGrammar(inhibitor_patterns + inhibit_patterns, defaultCategory='reln')
+
+>>> from DocumentParser import DocumentParser
+>>> parser = DocumentParser('inhibit1.txt')
+>>> doc = parser.scanDocument()
+>>> doc.preProcess()
+
+>>> print parseDocument(GRAMMAR, doc, ['reln'])
+"""
+
+__author__  = "Oliver Steele <steele@osteele.com>"
+
+import FSA
+import FSChartParser
+from FSChartParser import CategorizingAutomaton, Constituent
+from Matcher import Action
+
+
+#
+# Tests
+#
+
+
+class CategoryTest:
+    isCategoryTest = 1
+    isConstituentTest = 1
+    
+    def __init__(self, category):
+        self.category = category
+    
+    def __cmp__(self, other):
+        return cmp(type(self), type(other)) or cmp(self.__class__, other.__class__) or cmp(self.category, other.category)
+    
+    def __hash__(self):
+        return hash(self.category)
+    
+    def __repr__(self):
+        return str(self.category)
+    
+    def matches(self, item):
+        return self.category == getattr(item, 'category', None)
+    
+    def complement(self):
+        return AntiCategoryTest([self.category])
+    
+    def intersection(self, other):
+        if getattr(other, 'isAntiCategoryTest', 0):
+            return other.intersection(self)
+        elif getattr(other, 'isCategoryTest', 0):
+            if self.category == other.category:
+                return self
+            else:
+                return None
+        else:
+            if getattr(other, 'isComplexPatternElement', 0) and other.required.isUnconditional():
+                return self
+            else:
+                return None
+
+class AntiCategoryTest:
+    """Test that a constituent's category IS NOT one of a set of categories."""
+    isCategoryTest = 1
+    isAntiCategoryTest = 1
+    isConstituentTest = 1
+    
+    def __init__(self, categories):
+        categories = list(categories)
+        categories.sort()
+        self.categories = categories
+    
+    def __cmp__(self, other):
+        return cmp(type(self), type(other)) or cmp(self.__class__, other.__class__) or cmp(self.categories, other.categories)
+    
+    def __hash__(self):
+        return hash(self.categories)
+    
+    def __repr__(self):
+        import string
+        return string.join(map(lambda c:'~' + c, self.categories), ' & ')
+    
+    def matches(self, item):
+        for category in self.categories:
+            if item.category == category:
+                return 0
+        return 1
+    
+    def complement(self):
+        return map(CategoryTest, self.categories)
+    
+    def intersection(self, other):
+        if getattr(other, 'isAntiCategoryTest', 0):
+            return AntiCategoryTest(self.categories + filter(lambda e, l=self.categories:e not in l, other.categories))
+        elif getattr(other, 'isCategoryTest', 0):
+            if other.category in self.categories:
+                return None
+            return other
+        else:
+            return other
+
+
+#
+# Parser classes
+#
+class ScannerCategorizingAutomaton(CategorizingAutomaton):
+    def prime(self):
+        self.buildDecisionFunctions()
+        self.stateMatchesConstituents(self.initialState)
+    
+    #
+    # Decision trees
+    #
+    def buildDecisionFunction(self, state):
+        pairs = map(lambda (_, state, test):(test, state), self.transitionsFrom(state))
+        tokenTestPairs = filter(lambda (test, state):getattr(test, 'isPatternElement', 0), pairs)
+        constituentTestPairs = filter(lambda (test, state):not getattr(test, 'isPatternElement', 0), pairs)
+        tokenTestDecider = tokenTestPairs and self.buildDecisionTreeDecider(tokenTestPairs)
+        constituentTestDecider = constituentTestPairs and self.buildSerialDecider(constituentTestPairs)
+        if tokenTestDecider and constituentTestDecider:
+            def multiplexorDecisionFunction(constituent, tokenTestDecider=tokenTestDecider, constituentTestDecider=constituentTestDecider):
+                if hasattr(constituent, 'token'):
+                    return tokenTestDecider(constituent)
+                else:
+                    return constituentTestDecider(constituent)
+            return multiplexorDecisionFunction
+        elif tokenTestDecider:
+            return lambda constituent, fn=tokenTestDecider: hasattr(constituent, 'token') and fn(constituent)
+        else:
+            return constituentTestDecider or self.buildSerialDecider(constituentTestPairs)
+    
+    #
+    # Accepting
+    #
+    def labelMatches(self, label, constituent):
+        if getattr(label, 'isPatternElement', 0):
+            return hasattr(constituent, 'token') and label.match(constituent)
+        else:
+            return label.matches(constituent)
+    
+    def computeStateMatchesConstituents(self, state):
+        for _, _, test in self.transitionsFrom(state):
+            if getattr(test, 'isConstituentTest', 0):
+                return 1
+        return 0
+    
+    #
+    # Presentation template overrides
+    #
+    def tokenSeparator(self):
+        return '  '
+
+
+#
+# Pattern compilation
+#
+class CreateConstituentAction(Action):
+    def __init__(self, cat):
+        self.cat = cat
+    
+    def apply(self, children, start, end):
+        return Constituent(self.cat, children, start, end)
+
+def compilePatternElement(element, sourceLocation=None):
+    """Compile a PatternElement to a (possibly nondeterministic) FSA."""
+    if getattr(element, 'isPatternElement', 0):
+        fsa = FSA.singleton(element.withoutQuantifier(), arcMetadata=sourceLocation)
+        if element.isKleeneStar():
+            fsa = FSA.closure(fsa)
+        elif element.isKleenePlus():
+            fsa = FSA.iteration(fsa)
+        elif element.isOptional():
+            fsa = FSA.option(fsa)
+        return fsa
+    return FSA.singleton(element, arcMetadata=sourceLocation)
+
+def compilePatternElements(elements, pattern=None):
+    import string
+    arcs = []
+    sourceLocation = None
+    for index, element in map(None, range(len(elements)), elements):
+        if pattern is not None:
+             sourceLocation = [(pattern, index)]
+        arcs.append(compilePatternElement(element, sourceLocation))
+    fsa = reduce(FSA.concatenation, arcs).minimized()
+    fsa.label = string.join(map(str, elements))
+    return fsa
+
+def compilePattern(pattern):
+    """Compile a Pattern to a minimal FSA that detects sequences that
+    match the pattern."""
+    fsa = compilePatternElements(pattern.elements).coerce(ScannerCategorizingAutomaton)
+    fsa.label = pattern.name
+    fsa.source = pattern
+    return fsa
+
+
+#
+# Grammar compilation
+#
+def compilePatternRule(rule, defaultCategory=None):
+    from FSChartParser import compileRule
+    from types import TupleType
+    if getattr(rule, 'isCategorizingAutomaton', 0):
+        automaton = rule
+    elif type(rule) == TupleType:
+        lhs, rhs = rule
+        automaton = rhs.coerce(ScannerCategorizingAutomaton).minimized()
+        automaton.setFinalCategory(lhs)
+    else:
+        category = getattr(rule.action, 'cat', defaultCategory)
+        assert category, "each grammar pattern needs a CreateConstituentAction, or defaultCategory must be supplied"
+        automaton = compilePattern(rule).minimized()
+        automaton.setFinalCategory(category)
+    return automaton
+
+def compilePatternGrammar(rules, optimize=0, defaultCategory=None):
+    """Return a list of (lhs, automaton) pairs, suitable for use as an
+    FSChartParser grammar."""
+    from FSChartParser import compileRules, combineRules
+    rules = compileRules(map(lambda rule, category=defaultCategory:compilePatternRule(rule, category), rules))
+    if optimize:
+        rules = [combineRules(rules, lambda category:CategoryTest('=>' + category))]
+    for rule in rules:
+        rule.prime()
+    return rules
+
+
+#
+# Scanning functions
+#
+def tokenizeSentence(text):
+    from ntokenizer import tokenize
+    from sentensifier import sentensify
+    from ourtagger import tag
+    from htagger import desambiguate
+    from stemmer import stemSentence
+    from DocumentModel import Sentence
+    tokens = tokenize(text)
+    tokens = desambiguate(tag(tokens))
+    sentence = Sentence(tokens)
+    stemSentence(sentence)
+    return sentence
+
+def parseSentence(grammar, sentence, categories=None):
+    return FSChartParser.ChartParser(grammar).parse(sentence).constituents(categories)
+
+def parseString(grammar, text, categories=None):
+    return parseSentence(grammar, tokenizeSentence(text), categories)
+
+def parseDocument(grammar, document, categories=None):
+    """Use grammar to parse the sentences in document, and return the
+    maximal disjoint constituents in each sentence.  Categories
+    defaults to None (no restriction), and fn defaults to a function
+    that prints the constituents to standard output.
+    
+    document.preProcess() must have been called."""
+    parser = FSChartParser.ChartParser(grammar)
+    constituents = []
+    for sentence in document:
+        parser.parse(sentence)
+        constituents.extend(parser.constituents(categories))
+    return constituents
+
+def matchingDocumentSentences(grammar, document, categories=None):
+    """Use grammar to parse the sentences in document, and return
+    sentences that contained a category in categories, or any
+    nonterminal at all if categories is false.
+    
+    document.preProcess() must have been called."""
+    parser = FSChartParser.ChartParser(grammar)
+    sentences = []
+    for sentence in document:
+        parser.parse(sentence)
+        if parser.constituents(categories):
+            sentences.append(sentence)
+    return sentence
+
+
+===== reCompiler.py =====
+""" Module re_compile -- compile a regular expression into an FSA
+
+To Do
+-----
+New features:
+    - add \-, \~
+    - add remaining metachars
+    - char set with ^ as first char will print wrong
+    - figure out when to print spaces between operators
+"""
+
+__author__  = "Oliver Steele <steele@osteele.com>"
+
+import FSA
+from types import TupleType
+
+def compileSymbolRE(str):
+    return SymbolRECompiler(str).toFSA()
+    
+class SymbolRECompiler:
+    EOF = -1
+    
+    def __init__(self, str, recordSourcePositions=0):
+        self.str = str
+        self.recordSourcePositions = recordSourcePositions
+    
+    def toFSA(self, minimize=1):
+        self.index = 0
+        self.nextToken = None
+        fsa = self.compileExpr()
+        if self.index < len(self.str):
+            raise 'extra ' + `')'`
+        del self.index
+        fsa.label = self.str
+        if minimize:
+            fsa = fsa.minimized()
+        return fsa
+    
+    def readChar(self):
+        if self.index < len(self.str):
+            c, self.index = self.str[self.index], self.index + 1
+            return c
+    
+    def peekChar(self):
+        if self.index < len(self.str):
+            return self.str[self.index]
+    
+    def readToken(self):
+        token = self.nextToken or self._readNextToken()
+        self.nextToken = None
+        return token != self.EOF and token
+    
+    def peekToken(self):
+        token = self.nextToken = self.nextToken or self._readNextToken()
+        #print 'peekToken', token
+        return token != self.EOF and token
+    
+    def _readNextToken(self):
+        c = self.readChar()
+        if not c:
+            return self.EOF
+        elif c in '()|&':
+            return c
+        elif c == '.':
+            return ANY
+        return c
+    
+    def skipTokens(self, bag):
+        while self.peekToken() and self.peekToken() in bag:
+            self.readToken()
+    
+    def compileExpr(self):
+        fsa = FSA.NULL_FSA
+        while self.peekToken() and self.peekToken() != ')':
+            fsa = FSA.union(fsa, self.compileConjunction())
+            self.skipTokens(['|'])
+        return fsa
+    
+    def compileConjunction(self):
+        fsa = None
+        while self.peekToken() and self.peekToken() not in (')', '|'):
+            sequence = self.compileSequence()
+            fsa = fsa and FSA.intersection(fsa, sequence) or sequence
+            self.skipTokens(['&'])
+        return fsa
+    
+    def compileSequence(self):
+        fsa = FSA.EMPTY_STRING_FSA
+        while self.peekToken() and self.peekToken() not in (')', '|', '&'):
+            fsa = FSA.concatenation(fsa, self.compileItem())
+        return fsa
+    
+    def compileItem(self):
+        startPosition = self.index
+        c = self.readToken()
+        if c == '(':
+            fsa = self.compileExpr()
+            if self.readToken() != ')':
+                raise "missing ')'"
+        elif c == '~':
+            fsa = FSA.complement(self.compileItem())
+        else:
+            fsa = FSA.singleton(c, arcMetadata=self.recordSourcePositions and [startPosition])
+        while self.peekChar() and self.peekChar() in '?*+':
+            c = self.readChar()
+            if c == '*':
+                fsa = FSA.closure(fsa)
+            elif c == '?':
+                fsa = FSA.union(fsa, FSA.EMPTY_STRING_FSA)
+            elif c == '+':
+                fsa = FSA.iteration(fsa)
+            else:
+                raise 'program error'
+        return fsa
+
+
+#
+# Character REs
+#
+
+class CharacterSet:
+    def __init__(self, ranges):
+        from types import StringType
+        if type(ranges) == StringType:
+            ranges = self.convertString(ranges)
+        accum = []
+        # copy, so sort doesn't destroy the arg
+        for item in ranges:
+            if type(item) == TupleType:
+                if len(item) == 1:
+                    accum.append((item, item))
+                elif len(item) == 2:
+                    accum.append(item)
+                else:
+                    raise "invalid argument to CharacterSet"
+            elif type(item) == String:
+                for c in item:
+                    accum.append((c, c))
+            else:
+                raise "invalid argument to CharacterSet"
+        ranges = accum
+        ranges.sort()
+        index = 0
+        while index < len(ranges) - 1:
+            [(c0, c1), (c2, c3)] = ranges[index:index + 2]
+            if c1 >= c2:
+                ranges[index:index + 2] = [(c0, max(c1, c3))]
+            else:
+                index = index + 1
+        self.ranges = ranges
+    
+    def __cmp__(self, other):
+        return cmp(type(self), type(other)) or cmp(self.__class__, other.__class__) or cmp(self.ranges, other.ranges)
+
+    def __hash__(self):
+        return reduce(lambda a, b:a ^ b, map(hash, self.ranges))
+    
+    def convertString(self, str):
+        ranges = []
+        index = 0
+        while index < len(str):
+            c0 = c1 = str[index]
+            index = index + 1
+            if index + 1 < len(str) and str[index ] == '-':
+                c1 = str[index + 1]
+                index = index + 2
+            ranges.append((c0, c1))
+        return ranges
+    
+    def matches(self, c):
+        for c0, c1 in self.ranges:
+            if c0 <= c and c <= c1:
+                return 1
+        return 0
+    
+    def complement(self):
+        results = []
+        for (_, c0), (c1, _) in map(None, [(None, None)] + self.ranges, self.ranges + [(None, None)]):
+            i0 = c0 and ord(c0) + 1 or 0
+            i1 = c1 and ord(c1) - 1 or 255
+            if i0 <= i1:
+                results.append((chr(i0), chr(i1)))
+        if results:
+            return CharacterSet(results)
+    
+    def union(self, other):
+        a = self.complement()
+        b = other.complement()
+        if a and b:
+            c = a.intersection(b)
+            if c:
+                return c.complement()
+            else:
+                return self.ANY
+        else:
+            return a or b
+
+    def __add__(self, other):
+        return self.union(other)
+    
+    def intersection(self, other):
+        if self.ranges == other.ranges:
+            return self
+        results = []
+        for (a0, a1) in self.ranges:
+            for (b0, b1) in other.ranges:
+                c0 = max(a0, b0)
+                c1 = min(a1, b1)
+                if c0 <= c1:
+                    results.append((c0, c1))
+        results.sort()
+        if results:
+            return CharacterSet(results)
+    
+    def __str__(self):
+        """
+        >>> print CharacterSet([('a', 'a')])
+        a
+        >>> print CharacterSet([('a', 'b')])
+        [ab]
+        """
+        if self == self.ANY:
+            return '.'
+        elif not self.ranges:
+            return '[^.]'
+        for key, value in METACHARS.items():
+            if self == value:
+                return '\\' + key
+        ranges = self.ranges
+        if len(ranges) == 1 and ranges[0][0] == ranges[0][1]:
+            return ranges[0][0]
+        if ranges[0][0] == chr(0) and ranges[-1][1] == chr(255):
+            s = str(self.complement())
+            if s[0] == '[' and s[-1] == ']':
+                s = s[1:-1]
+            return '[^' + s + ']'
+        s = ''
+        for c0, c1 in ranges:
+            if c0 == c1 and c0 != '-':
+                s = s + self.crep(c0)
+            elif ord(c0) + 1 == ord(c1) and c0 != '-' and c1 != '-':
+                s = s + "%s%s" % (self.crep(c0), self.crep(c1))
+            else:
+                s = s + "%s-%s" % (self.crep(c0), self.crep(c1))
+        return '[' + s + ']'
+    
+    def crep(self, c):
+        return {'\t': '\\t', '\n': '\\n', '\r': '\\r', '\f': '\\f', '\v': '\\v'}.get(c, c)
+    
+    def __repr__(self):
+        return '<' + self.__class__.__name__ + ' ' + str(self) + '>'
+
+METACHARS = {
+        'd': CharacterSet('0-9'),
+        's': CharacterSet(' \t\n\r\f\v'),
+        'w': CharacterSet('a-zA-Z0-9')}
+METACHARS['D'] = METACHARS['d'].complement()
+METACHARS['S'] = METACHARS['s'].complement()
+METACHARS['W'] = METACHARS['w'].complement()
+
+CharacterSet.ANY = CharacterSet([(chr(0), chr(255))])
+
+
+class RECompiler(SymbolRECompiler):
+    def _readNextToken(self):
+        c = self.readChar()
+        if not c:
+            return self.EOF
+        elif c in '()|':
+            return c
+        elif c == '.':
+            return CharacterSet.ANY
+        elif c == '[':
+            if self.peekChar() == '~':
+                self.readChar()
+                return self.readCSetInnards().complement()
+            else:
+                return self.readCSetInnards()
+        elif c == '\\':
+            c = self.readChar()
+            if METACHARS.get(c):
+                return METACHARS.get(c)
+            elif c == '&':
+                return c
+            else:
+                return CharacterSet([(c,c)])
+        else:
+            return CharacterSet([(c,c)])
+    
+    def readCSetInnards(self):
+        cset = CharacterSet([])
+        while 1:
+            c = self.readChar()
+            if c == ']':
+                return cset
+            if self.peekChar() == '-':
+                self.readChar()
+                cset = cset.union(CharacterSet([(c, self.readChar())]))
+            else:
+                cset = cset.union(CharacterSet([(c, c)]))
+
+def compileRE(str, minimize=1, recordSourcePositions=0):
+    return RECompiler(str, recordSourcePositions=recordSourcePositions).toFSA(minimize=minimize)
+
+#
+# testing
+#
+def _printCompiledREs():
+    print compileRE('a')
+    print compileRE('ab')
+    print compileRE('a|b')
+    print compileRE('abc')
+    print compileRE('ab*c')
+    print compileRE('ab?c')
+    print compileRE('ab+c')
+    print compileRE('ab|c')
+    print compileRE('a(b|c)')
+    #print compileRE('a\&a')
+    #print compileRE('ab+\&a+b')
+    #print compileRE('ab*\&a*b')
+    print compileRE('ab|c?')
+    print compileRE('ab|bc?')
+    print compileRE('a?')
+    print compileRE('abc|acb|bac|bca|cab|cba')
+    print compileRE('abc|acb|bac|bca|cab|cba', 0).determinized()
+    print compileRE('abc|acb|bac|bca|cab|cba', 0).determinized()
+    print compileRE('abc|acb|bac|bca|cab|cba', 0).minimized()
+    print compileRE('abc|acb|bac|bca|cab', 0).determinized()
+
+    print compileRE('a', 0)
+    print compileRE('a', 0).determinized()
+    print compileRE('ab', 0).determinized()
+    print compileRE('a', 0).minimized()
+    print compileRE('ab', 0).minimized()
+    print compileRE('a')
+    print compileRE('a|b', 0).determinized()
+    print compileRE('a|b', 0).minimized().getArcMetadata()
+    print compileRE('a|b', 0).minimized()
+
+def _test(reset=0):
+    import doctest, compileRE
+    if reset:
+        doctest.master = None # This keeps doctest from complaining after a reload.
+    return doctest.testmod(compileRE)
+
+
+===== reDecompiler.py =====
+"""
+To do:
+New features:
+    - iteration reduction
+Bug fixes:
+    - A* ending up A?*
+    - (a*b)*
+Cleanup:
+    - fix the case where there's no expression
+    - alphabetize multiple branches (or sort by source order?)
+Optimizations:
+    - only walk the cycle when there's a suffix
+
+"""
+
+__author__  = "Oliver Steele <steele@cs.brandeis.edu>"
+
+from compileRE import compileRE
+
+#
+# Converting FSAs to RE trees
+#
+
+def decompileFSA(fsa, dottedStates=[], wrap=None, sep=None, returnTree=0):
+    queries = {}
+    if dottedStates:
+        for state in dottedStates:
+            queries[state] = []
+    tree = computeSubgraphTree(fsa.transitions, fsa.initialState, fsa.finalStates, dottedStates)
+    if returnTree or tree is None:
+        return tree
+    if sep is None:
+        sep = ''
+        labels = fsa.alphabet or fsa.labels()
+        if filter(lambda label:type(label) == type('a'), labels) == labels and filter( lambda label:len(label) > 1, labels):
+            sep = ' '
+    #print tree
+    #tree = combineDisjunctionEnds(tree)
+    #print tree
+    return treeToString(tree, sep=sep, wrap=wrap)
+
+def addListMappingItem(mapping, key, value):
+    for tk, tv in mapping:
+        if key == tk:
+            tv.append(value)
+            return
+    mapping.append((key, [value]))
+
+def combineDisjunctionEnds(tree):
+    if tree in (EMPTY_TREE, DOT_TREE) or tree[0] == 'LEAF':
+        return tree
+    if tree[0] == DISJUNCTION:
+        mapping = []
+        disjuncts = map(combineDisjunctionEnds, tree[1])
+        #print 'incoming:', disjuncts
+        for disjunct in disjuncts:
+            if type(disjunct) == TupleType and disjunct[0] == CONCATENATION:
+                disjunct = disjunct[1]
+            else:
+                disjunct = [disjunct]
+            addListMappingItem(mapping, disjunct[-1], makeConcatenationTree(disjunct[:-1]))
+        if len(mapping) < len(disjuncts):
+            disjuncts = []
+            for key, paths in mapping:
+                disjuncts.append(concatenateTrees(makeDisjunctionTree(paths), key))
+            #print '->', disjuncts
+        disjuncts.sort()
+        return makeDisjunctionTree(disjuncts)
+    elif tree[0] == CONCATENATION:
+        return (tree[0], map(combineDisjunctionEnds, tree[1]))
+    elif tree[0] in QUANTIFIERS:
+        return (tree[0], combineDisjunctionEnds(tree[1]))
+    else:
+        raise 'unknown operator', tree[0]
+
+def computeSubgraphTree(graph, start, finals, dottedStates, brokenNodes=[], isFirst=0, forbidden=[]):
+    """Returns a list of disjuncts.  If there's only one possibility, the list is a singleton."""
+    if start in brokenNodes and not isFirst:
+        #print graph, start, finals, isFirst, brokenNodes, forbidden, ':', (start in finals and EMPTY_TREE) or None
+        if start in finals:
+            return EMPTY_TREE
+        else:
+            return None
+    
+    wasforbidden = forbidden
+    wasBroken = brokenNodes
+    
+    if start not in brokenNodes:
+        brokenNodes = brokenNodes + [start]
+    
+    preamble = None
+    if not isFirst:
+        preamble = computeSubgraphTree(graph, start, [start], dottedStates, brokenNodes, isFirst=1, forbidden=forbidden)
+        if preamble:
+            preamble = quantifyTree(preamble)
+    
+    disjuncts = []
+    if start in finals and start not in forbidden:
+        disjuncts.append(EMPTY_TREE)
+    if preamble:
+        forbidden = forbidden + [start]
+    for s0, s1, label in graph:
+        if s0 == start and s1 not in forbidden:
+            branch = label and makeLeaf(label) or EMPTY_TREE
+            tail = computeSubgraphTree(graph, s1, finals, dottedStates, brokenNodes, isFirst=0, forbidden=forbidden)
+            if tail:
+                disjuncts.append(concatenateTrees(branch, tail))
+    body = disjuncts and makeDisjunctionTree(disjuncts) or None
+    
+    if body and start in dottedStates:
+        body = concatenateTrees(DOT_TREE, body)
+    
+    #print graph, start, finals, isFirst, wasBroken, wasforbidden, ':', preamble, '+', body
+    if preamble and body:
+        body = concatenateTrees(preamble,body)
+    #elif preamble and start in finals and not isFirst:
+    #   body = preamble
+    return body
+
+
+#
+# Tree construction
+#
+
+DISJUNCTION = '|'
+LEAF = 'LEAF'
+CONCATENATION = ':'
+QUANTIFIERS = ('*', '?', '+')
+EMPTY_TREE = 'e'
+DOT_TREE = '.'
+
+def makeNode(op, children):
+    return (op, children)
+
+def makeLeaf(value):
+    return makeNode(LEAF, value)
+
+def makeDisjunctionTree(disjuncts):
+    assert disjuncts, 'no disjuncts'
+    if len(disjuncts) == 1:
+        return disjuncts[0]
+    elif EMPTY_TREE in disjuncts:
+        return quantifyTree(makeDisjunctionTree(filter(lambda expr:expr != EMPTY_TREE, disjuncts)), '?')
+    else:
+        return makeNode(DISJUNCTION, disjuncts)
+
+def makeConcatenationTree(items):
+    if len(items) == 0:
+        return EMPTY_TREE
+    elif len(items) == 1:
+        return items[0]
+    else:
+        return makeNode(CONCATENATION, items)
+
+def concatenateTrees(a, b):
+    if a == EMPTY_TREE:
+        left = []
+    elif a[0] == CONCATENATION:
+        left = a[1]
+    else:
+        left = [a]
+    if b == EMPTY_TREE:
+        right = []
+    elif b[0] == CONCATENATION:
+        right = b[1]
+    else:
+        right = [b]
+    children = left + right
+    if not children:
+        return EMPTY_TREE
+    elif len(children) == 1:
+        return children[0]
+    else:
+        return makeNode(CONCATENATION, children)
+
+def quantifyTree(node, quantifier='*'):
+    if node == EMPTY_TREE:
+        return node
+    else:
+        return makeNode(quantifier, node)
+
+
+#
+# Rendering trees to strings
+#
+
+def treeToString(node, caller=None, wrap=None, sep=None):
+    import string
+    def toString(node, caller=node[0], wrap=wrap, sep=sep):
+        return treeToString(node, caller=caller, wrap=wrap, sep=sep)
+
+    if node == EMPTY_TREE:
+        return ''
+    elif node == DOT_TREE:
+        return '.'
+    
+    op, args = node[0], node[1]
+    if op == LEAF:
+        if args == FSA.ANY:
+            return '.'
+        else:
+            s = str(args)
+            if ('|' in s or '&' in s) and (s[0] != '(' or s[-1] != ')'):
+                s = '(' + s + ')'
+            return s
+    elif op == CONCATENATION:
+        s = string.join(map(toString, args), sep)
+        if caller in QUANTIFIERS:
+            s = '(' + s + ')'
+        return s
+    elif op == DISJUNCTION:
+        bar = '|'
+        #if wrap and len(s) > wrap:
+        #   bar = '|\n  '
+        s = string.join(map(lambda arg, f=toString:f(arg, wrap=None), args), bar)
+        if caller == CONCATENATION or caller in QUANTIFIERS:
+            s = '(' + s + ')'
+        return s
+    elif op in QUANTIFIERS:
+        return toString(args) + op
+    else:
+        raise 'unknown operator:', op
+
+
+#
+# RE comparison
+#
+
+def simplify(str):
+    return decompileFSA(compileRE(str).minimized())
+
+def _testSimplify():
+    cases = ['a',
+             'a*',
+             'a?',
+             'ab',
+             'a?b',
+             'ab?',
+             'a*b',
+             'ab*',
+             ('abc'),
+             ('ab|c'),
+             ('ab|ac', 'a[bc]'),
+             ('ab|cb', '[ac]b'),
+             ('ab|c?'),
+             ('(ab)*'),
+             ('(ab)*c'),
+             ('(ab)*(cd)', '(ab)*cd),
+             ('(ab)*(cd)*'),
+             ('(ab)?cd'),
+             ('ab(cd)?'),
+             ('(ab)*c'),
+             ('abc|acb|bac|bca|cab|cba', 'c(ab|ba)|a(cb|bc)|b(ac|ca)'),
+             ('[ab]c|[bc]a|[ca]b'),
+             ('(a*b)*'),
+             ('(a|b)*', '[ab]*'),
+             ]
+    failures = 0
+    for case in cases:
+        if type(case) == TupleType:
+            if len(case) == 1:
+                case += case
+        else:
+            case = (case, case)
+        input, expect = case
+        receive = simplify(input)
+        if expect != receive:
+            print 'expected %s -> %s; received %s' % (input, expect, receive)
+            failures += 1
+    print "%s failure%s" % (failures or 'no', 's'[failures==1:])
+
+def compareREs(*exprs):
+    import string
+    fsas = map(compileRE, exprs)
+    def setName(set):
+        set = map(lambda x:x.label, set)
+        if len(set) == 1:
+            return set[0]
+        else:
+            import string
+            return string.join(set[:-1], ', ') + ' and ' + set[-1]
+    print 'Comparing', setName(fsas)
+    processed = []
+    sets = []
+    for fsa in fsas:
+        if fsa in processed:
+            continue
+        set = [fsa]
+        for other in fsas:
+            if other != fsa and other not in processed and FSA.equivalent(fsa, other):
+                set.append(other)
+        sets.append(set)
+        processed.extend(set)
+    for set in sets:
+        if len(set) > 1:
+            print setName(set), 'are equivalent'
+    if len(sets) > 1:
+        for set in sets:
+            others = filter(lambda a,b=set:a not in b, fsas)
+            only = FSA.difference(set[0], reduce(FSA.union, others))
+            if not only.isEmpty():
+                es = (len(set) == 1 and 'es') or ''
+                print 'Only', setName(set), 'match'+es, decompileFSA(only)
+
+"""
+compareREs('a*b', 'b*a', 'b|a*b')
+compareREs('a*b', 'ab*')
+compareREs('a*b', 'b|a*b')
+compareREs('ab*', 'b|a*b')
+
+print decompileFSA(compileRE('ab|ac'), [0])
+print decompileFSA(compileRE('ab|ac', 0), [0])
+print decompileFSA(compileRE('abc'), [1])
+print decompileFSA(compileRE('abc'), [1, 2])
+print decompileFSA(compileRE('abc'), [0, 1, 2])
+print decompileFSA(compileRE('abc'), [0, 1, 2, 3])
+print decompileFSA(FSA.compileRE('a bb* c', multichar=1))
+print decompileFSA(FSA.compileRE('(a bb)* c', multichar=1))
+print decompileFSA(FSA.complement(FSA.containment(FSA.singleton('a'), 3)))
+
+# lift FSA operators to string operators:
+print complement('ab*')
+print difference('a*b', 'ab*')
+"""
+
+def _test(reset=0):
+    import doctest, decompileFSA
+    if reset:
+        doctest.master = None # This keeps doctest from complaining after a reload.
+    return doctest.testmod(decompileFSA)
+
+
+===== reTools.py =====
+__author__  = "Oliver Steele <steele@cs.brandeis.edu>"
+
+#
+# Simplification
+#
+
+def simplify(str):
+    # replace() is workaround for bug in simplify
+    return decompileFSA(compileRE(str).minimized()).replace('?*','*')
+
+def _testSimplify():
+    cases = ['a',
+             'a*',
+             'a?',
+             'ab',
+             'a?b',
+             'ab?',
+             'a*b',
+             'ab*',
+             ('abc'),
+             ('ab|c'),
+             ('ab|ac', 'a[bc]'),
+             ('ab|cb', '[ac]b'),
+             ('ab|c?'),
+             ('(ab)*'),
+             ('(ab)*c'),
+             ('(ab)*(cd)', '(ab)*cd)'),
+             ('(ab)*(cd)*'),
+             ('(ab)?cd'),
+             ('ab(cd)?'),
+             ('(ab)*c'),
+             ('abc|acb|bac|bca|cab|cba', 'c(ab|ba)|a(cb|bc)|b(ac|ca)'),
+             ('[ab]c|[bc]a|[ca]b'),
+             ('(a*b)*'),
+             ('(a|b)*', '[ab]*'),
+             ]
+    failures = 0
+    for case in cases:
+        if type(case) == TupleType:
+            if len(case) == 1:
+                case += case
+        else:
+            case = (case, case)
+        input, expect = case
+        receive = simplify(input)
+        if expect != receive:
+            print 'expected %s -> %s; received %s' % (input, expect, receive)
+            failures += 1
+    print "%s failure%s" % (failures or 'no', 's'[failures==1:])
+
+
+#
+# Comparison
+#
+
+def compareREs(*exprs):
+    import string
+    fsas = map(compileRE, exprs)
+    def setName(set):
+        set = map(lambda x:x.label, set)
+        if len(set) == 1:
+            return set[0]
+        else:
+            import string
+            return string.join(set[:-1], ', ') + ' and ' + set[-1]
+    print 'Comparing', setName(fsas)
+    processed = []
+    sets = []
+    for fsa in fsas:
+        if fsa in processed:
+            continue
+        set = [fsa]
+        for other in fsas:
+            if other != fsa and other not in processed and FSA.equivalent(fsa, other):
+                set.append(other)
+        sets.append(set)
+        processed.extend(set)
+    for set in sets:
+        if len(set) > 1:
+            print setName(set), 'are equivalent'
+    if len(sets) > 1:
+        for set in sets:
+            others = filter(lambda a,b=set:a not in b, fsas)
+            only = FSA.difference(set[0], reduce(FSA.union, others))
+            if not only.isEmpty():
+                es = (len(set) == 1 and 'es') or ''
+                print 'Only', setName(set), 'match'+es, decompileFSA(only)
+
+"""
+compareREs('a*b', 'b*a', 'b|a*b')
+compareREs('a*b', 'ab*')
+compareREs('a*b', 'b|a*b')
+compareREs('ab*', 'b|a*b')
+
+# todo: lift FSA operators to string operators:
+print complement('ab*')
+print difference('a*b', 'ab*')
+"""
+
+#
+# Tracing
+#
+
+"""
+To do:
+Bug fixes:
+    - in tracing, ab*\&a*b at final state only prints the period at the end
+    - trace doesn't work with nondeterminized automata
+
+Functions for web page:
+1) Show how far we got (the last state)
+2) Give a list of n steps
+
+Later:
+3) Simplify, add algebra
+"""
+
+def collectSourcePositions(fsa, states):
+    positions = []
+    for state in states:
+        for transition in fsa.transitionsFrom(state):
+            for position in fsa.getArcMetadataFor(transition, []):
+                if position not in positions:
+                    positions.append(position)
+    return positions
+
+def fsaLabelWithCursor(fsa, states):
+    """Return the FSA's label, with a cursor ('.') inserted at
+    each position in states."""
+    s = ''
+    positions = collectSourcePositions(fsa, states)
+    for index in range(len(fsa.label)):
+        if index + 1 in positions:
+            s = s + '.'
+        s = s + fsa.label[index]
+    if filter(lambda s, finals=fsa.finalStates: s in finals, states):
+        s = s +  '.'
+    return s
+
+from compileRE import compileRE
+
+def traceREStates(re, str, trace=1):
+    fsa = compileRE(re, recordSourcePositions=1)
+    states = fsa.epsilonClosure(fsa.initialState)
+    for i in range(len(str)):
+        newStates = fsa.nextStateSet(states, str[i])
+        if newStates:
+            if trace:
+                print fsaLabelWithCursor(fsa, newStates), 'matches', str[:i+1] + '.' + str[i+1:]
+            states = newStates
+        else:
+            c = CharacterSet([])
+            for s0 in states:
+                for _, _, label in fsa.transitionsFrom(s0):
+                    if label:
+                        c = c.union(label)
+            print fsaLabelWithCursor(fsa, states), 'stops matching at', str[:i] + '.' + str[i:], '; expected', c
+            break
+
+def updatePositions(fsa, states, input, positions):
+    successors = []
+    #print 'counting from', states, 'over', label, 'in', fsa.label
+    for state in states:
+        for transition in fsa.transitionsFrom(state):
+            _, sink, label = transition
+            if fsa.labelMatches(label, input) and sink not in successors:
+                successors.extend(fsa.epsilonClosure(sink))
+                #todo: share with collectSourcePositions
+                data = fsa.getArcMetadataFor(transition, [])
+                for position in data:
+                    if position not in positions:
+                        positions.append(position)
+    return successors
+
+def reMatchStatePairs(re, str):
+    """Return a list of (re, str), where re is a the regular
+    expression with <SPAN>s inserted over all the matched characters,
+    and str is the string with <SPAN>s likewise inserted."""
+    #print re, '~=', str
+    pairs = []
+    fsa = compileRE(re, recordSourcePositions=1)
+    states = fsa.epsilonClosure(fsa.initialState)
+    positions = [] #todo: everything that starts here?
+    for i in range(len(str)):
+        if i < len(str):
+            #print states, '->', newStates, '(', str[i], ')'
+            #todo: factor the following block with fsa.nextStateSet
+            newPositions = []
+            newStates = updatePositions(fsa, states, str[i], newPositions)
+            #assert newStates == fsa.nextStateSet(states, str[i])
+        if not newStates:
+            # we ran out of matches
+            # todo: show in red where the match stopped, as in the textual version
+            expected = None
+            for state in states:
+                for t in fsa.transitionsFrom(state):
+                    label = t[2]
+                    if expected:
+                        expected = expected + label
+                    else:
+                        expected = label
+            return pairs, 'expected %s' % expected
+        srcLabel = fsa.label
+        # todo: could color newly matched states in a different color
+        #todo: quote the html stuff
+        rem = ''
+        #print srcLabel, allStates, positions
+        def htmlQuote(str):
+            return ''.join([{'<': '&lt;', '>': '&gt;', '&': '&amp;'}.get(c, c) for c in str])
+        for j in range(len(srcLabel)):
+            c = htmlQuote(srcLabel[j])
+            if j+1 in newPositions:
+                rem += '<SPAN CLASS="rematchnew">%s</SPAN>' % c
+                #positions.append(j)
+            elif j+1 in positions:
+                rem += '<SPAN CLASS="rematch">%s</SPAN>' % c
+            else:
+                rem += c
+        s0, s1, s2 = htmlQuote(str[:i+1]), '', htmlQuote(str[i+1:])
+        strm = '<SPAN CLASS="strmatch">%s</SPAN><SPAN CLASS="strmatchnew">%s</SPAN>%s' % (s0, s1, s2)
+        comment = "states: %s -> %s; positions: %s -> %s; index = %d" % (states,newStates,positions,newPositions,i)
+        pairs.append((rem, strm, comment))
+        states = newStates
+        positions += newPositions
+    return pairs, [s for s in states if s in fsa.finalStates]
+
+_CASES = [('abc', 'abc'),
+          ('abc', 'ab'),
+          ('ab', 'abc'),
+          ('ab|ac', 'ab'),
+          ('(a*b)*', 'aaabaabab'),
+          ('abc', 'ac')]
+
+# attributes at http://www.echoecho.com/csslinks.htm
+STYLE = """<STYLE TYPE="text/css" MEDIA="screen" TITLE="Special paragraph colour">
+<!--
+SPAN.rematch {text-decoration: underline;}
+SPAN.rematchnew {color: green; style: bold; text-face: bold; font-style: bold; background: red}
+SPAN.strmatch {text-decoration: underline; background: yellow}
+SPAN.strmatchnew {text-decoration: underline;}
+-->
+</STYLE>"""
+
+def makeHtml():
+    import os
+    f = open('match.html', 'w')
+    #f = open(os.path.join(os.path.split(__file__)[0], 'foo.html'), 'w')
+    print >> f, '<HTML><HEAD>'
+    print >> f, STYLE
+    print >> f, '</HEAD><BODY>'
+    for re, str in _CASES:
+        pairs, success = reMatchStatePairs(re, str)
+        op = success and '=~' or '!~'
+        print >> f, '<H1>%r %s /%s/</H1>' % (str, op, re)
+        print >> f, '<TABLE>'
+        for r, s, note in pairs:
+            print >> f, '<TR><TD>%s' % r
+            print >> f, '<TD>=~'
+            print >> f, '<TD>%s' % s
+            print >> f, '<TD>%s' % note
+        if not success:
+            print >> f, '<TR><TD COLSPAN=2>Failure'
+        print >> f, '</TABLE>'
+    print >> f, '</BODY></HTML>'
+
+#print reMatchStatePairs('abc', 'abc')
+
+makeHtml()
+
+def _test(reset=0):
+    import doctest, reTools
+    if reset:
+        doctest.master = None # This keeps doctest from complaining after a reload.
+    return doctest.testmod(reTools)
+
+
+===== examples/Patterns.py =====
+#!/usr/bin/python
+
+
+from Matcher import Pattern
+from Matcher import PatternElement
+from Matcher import Action
+
+
+tagList = ['NN','NNS','NNP','NNPS','DT','JJ','JJR','JJS','CD']
+
+el1 = PatternElement(tag=tagList)
+el2 = PatternElement(tag=tagList, quant='?')
+el3 = PatternElement(tag=tagList, quant='*')
+el4 = PatternElement(tag=tagList, quant='+')
+pattern1 = Pattern('pattern1',[el4])
+pattern2 = Pattern('pattern2',[el1,el2,el3,el4])
+
+
+
+# abbreviations
+
+adj_tags   =  [ 'JJ','JJR','JJS' ]
+adv_tags   =  [ 'RB','RBR','RBS' ]
+det_tags   =  [ 'DT' ]
+modal_tags =  [ 'MD' ]
+noun_tags  =  [ 'NN','NNS','NNP','NNPS', 'NN-PROTEIN', 'unknown' ]
+verb_tags  =  [ 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ' ]
+
+np_internal_tags  = noun_tags + adj_tags + [ 'CD', 'DT', 'SYM' ]
+
+def initializeTagAbbreviations():
+    import string
+    from PatternElement import defineAbbreviation
+    for tag in string.split('adj_tags adv_tags det_tags modal_tags noun_tags verb_tags np_internal_tags'):
+        defineAbbreviation('#' + tag, globals()[tag])
+initializeTagAbbreviations()
+del initializeTagAbbreviations
+
+
+# Inhibitor Patterns
+
+
+inhibitor1 = Pattern(
+    'np_inhibitor_comma_np',
+    [ PatternElement( tag=det_tags),
+      PatternElement( tag=np_internal_tags, quant='*'),
+      PatternElement( tag=noun_tags),
+      PatternElement( stem=['inhibitor']),
+      PatternElement( tag=[',']),
+      PatternElement( tag=np_internal_tags, quant='+') ],
+    Action(head=[4],args=[[2,3],[6]]))
+
+inhibitor2 = Pattern(
+    'np_comma_det_np_inhibitor',
+    [ PatternElement( tag=np_internal_tags, quant='+'),
+      PatternElement( tag=[',']),
+      PatternElement( tag=det_tags),
+      PatternElement( tag=np_internal_tags, quant='*'),
+      PatternElement( tag=noun_tags),
+      PatternElement( stem=['inhibitor']) ],
+    Action(head=[6],args=[[1],[4,5]]))
+
+inhibitor3 = Pattern(
+    'det_np_inhibitor_np?',
+    [ PatternElement( tag=det_tags),
+      PatternElement( tag=np_internal_tags, quant='*'),
+      PatternElement( tag=noun_tags),
+      PatternElement( stem=['inhibitor']),
+      PatternElement( tag=np_internal_tags, quant='*') ],
+    Action(head=[4],args=[[2,3],[5]]))
+
+inhibitor4 = Pattern(
+    'np_comma_det_inhibitor_of_np',
+    [ PatternElement( tag=np_internal_tags, quant='+'),
+      PatternElement( tag=[',']),
+      PatternElement( tag=det_tags),
+      PatternElement( stem=['inhibitor']),
+      PatternElement( stem=['of']),
+      PatternElement( tag=np_internal_tags, quant='+'),
+      PatternElement( stem=['of','on'], quant='?'),
+      PatternElement( tag=np_internal_tags, quant='*') ],
+    Action(head=[4,5],args=[[1],[6,7,8]]))
+    
+
+inhibitor_patterns = [ inhibitor1, inhibitor2, inhibitor3, inhibitor4 ]
+
+
+
+# Inhibit Patterns
+
+inhibit_1 = Pattern(
+    'det_ability_of_np_to_inhibit_np',
+    [ PatternElement( tag=det_tags, quant='*

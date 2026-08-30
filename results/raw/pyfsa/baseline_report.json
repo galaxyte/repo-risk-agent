@@ -1,0 +1,130 @@
+{
+  "repo_name": "pyfsa",
+  "risk_score": 82,
+  "effort_multiplier": 3.0,
+  "summary": "This repository provides a classic finite-state automata library and related regex/compiler/parser utilities, but it is written for Python 2-era runtimes and contains multiple correctness, portability, and maintainability issues. Many modules reference external packages that are not present, several imports point to non-existent module names, and there are clear bugs that will prevent successful execution without fixes. There is no packaging, CI, or tests beyond doctest-style examples. Taking on work here will likely require a Python 3 port, dependency discovery/replacement, bug fixes, and basic project hygiene (packaging, tests, CI).",
+  "red_flags": [
+    {
+      "title": "Python 2-only code patterns (compatibility risk)",
+      "severity": "high",
+      "evidence": "from types import InstanceType, ListType, IntType, LongType",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py"
+    },
+    {
+      "title": "Use of obsolete backtick repr (Python 3 syntax error)",
+      "severity": "high",
+      "evidence": "output.append('\\tinitialState = ' + `self.initialState` + ';')",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py"
+    },
+    {
+      "title": "Undefined module import: compileRE (module file here is reCompiler.py)",
+      "severity": "high",
+      "evidence": "from compileRE import compileRE",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "reDecompiler.py"
+    },
+    {
+      "title": "Undefined module import: compileRE (module file here is reCompiler.py)",
+      "severity": "high",
+      "evidence": "from compileRE import compileRE",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "reTools.py"
+    },
+    {
+      "title": "Undefined name used in tokenization (ANY)",
+      "severity": "high",
+      "evidence": "elif c == '.':\n            return ANY",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "reCompiler.py"
+    },
+    {
+      "title": "Undefined type name in CharacterSet constructor",
+      "severity": "high",
+      "evidence": "elif type(item) == String:",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "reCompiler.py"
+    },
+    {
+      "title": "Method call to non-existent attribute (likely NameError)",
+      "severity": "high",
+      "evidence": "if self.categoriesFor(state):",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSChartParser.py"
+    },
+    {
+      "title": "Incorrect use of filter() (TypeError in Python 2, Python 3 incompatible)",
+      "severity": "high",
+      "evidence": "return filter(self.constituentMaps[index].values())",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSChartParser.py"
+    },
+    {
+      "title": "Arc metadata copy bug in intersection (uses 'la' for b-automaton)",
+      "severity": "medium",
+      "evidence": "if b.getArcMetadataFor((sa0, sa1, la)):\n                            arcMetadata.append((transition, b.getArcMetadataFor((sa0, sa1, la))))",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py"
+    },
+    {
+      "title": "Insecure temporary file creation and shelling out",
+      "severity": "medium",
+      "evidence": "dotfile = tempfile.mktemp()\n    psfile = tempfile.mktemp()\n    os.system(\"%s -Tps %s -o %s\" % (dotter, dotfile, psfile))",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py"
+    },
+    {
+      "title": "Side effects on import (generates files)",
+      "severity": "medium",
+      "evidence": "makeHtml()",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "reTools.py"
+    },
+    {
+      "title": "Missing external dependencies referenced (tokenizer, tagger, etc.)",
+      "severity": "high",
+      "evidence": "from ntokenizer import tokenize\nfrom sentensifier import sentensify\nfrom ourtagger import tag\nfrom htagger import desambiguate\nfrom stemmer import stemSentence\nfrom DocumentModel import Sentence",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "PatternScanner.py"
+    },
+    {
+      "title": "Missing external dependencies referenced in examples",
+      "severity": "medium",
+      "evidence": "from stemmer import unstemToken\nfrom ourtagger import tag\nfrom htagger import possibleTags",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "examples/PatternElement.py"
+    }
+  ],
+  "clarifying_questions": [
+    "What Python version and runtime environment must this project support? Is a Python 3 port in scope?",
+    "Do you have the missing dependencies (e.g., ntokenizer, sentensifier, ourtagger, htagger, stemmer, DocumentModel, Matcher, NumFSAUtils, REUtils), or should we replace them with maintained alternatives?",
+    "Is the re module intended to be named compileRE.py (as referenced) or reCompiler.py (as committed)? Should we standardize the module names?",
+    "What is the expected deliverable: a fixed, runnable library, or also a packaged release (pyproject.toml/setup), with tests and CI?",
+    "Are there existing datasets or test cases we should use to validate functionality beyond the doctest snippets?",
+    "Is it acceptable to remove or quarantine code with CLI/GUI side-effects (e.g., reTools.makeHtml(), FSA.view) or should we refactor behind flags?",
+    "Is there a license for this codebase? If so, please provide it for inclusion; otherwise, what license should we apply?",
+    "Should security hardening be in scope (e.g., replacing tempfile.mktemp, avoiding os.system)?",
+    "What parts of the repository are production-critical versus examples or legacy utilities (e.g., examples/, reDecompiler, reTools)?",
+    "Do you require compatibility with original output formats/APIs (e.g., arc metadata semantics), or can we make breaking changes to fix bugs?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The code is valuable but legacy: it is Python 2-specific, has missing modules, clear bugs, and unsafe patterns. With explicit agreement to port to Python 3, fix imports/bugs, stub or replace missing dependencies, and add minimal tests/packaging, this is feasible. Without those conditions, risk of overruns is high.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}

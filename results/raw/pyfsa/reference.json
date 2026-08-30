@@ -1,0 +1,75 @@
+{
+  "repo_name": "pyfsa",
+  "build_status": "passed",
+  "test_status": "failed",
+  "build_test_log": [
+    {
+      "step": "pip_install",
+      "argv": [
+        "pip",
+        "install",
+        "--break-system-packages",
+        "-q",
+        "."
+      ],
+      "cwd": ".",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "timed_out": false,
+      "duration_sec": 0.4581702919967938
+    },
+    {
+      "step": "pytest",
+      "argv": [
+        "pytest",
+        "-q"
+      ],
+      "cwd": ".",
+      "exit_code": 5,
+      "stdout": "\nno tests ran in 0.00s\n",
+      "stderr": "",
+      "timed_out": false,
+      "duration_sec": 0.11976425000466406
+    }
+  ],
+  "dependency_audit": {
+    "ecosystem": "pip_installed_env",
+    "command": [
+      "pip-audit",
+      "-f",
+      "json"
+    ],
+    "exit_code": 1,
+    "summary": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 14
+    },
+    "note": "No requirements.txt; audited whatever is currently installed in the sandbox. Run an install step first for this to be meaningful.",
+    "raw_stdout": "istribution. This issue is fixed in version 83.0.0.\"}, {\"id\": \"PYSEC-2026-3447\", \"fix_versions\": [\"83.0.0\"], \"aliases\": [\"CVE-2026-59890\", \"BIT-setuptools-2026-59890\", \"GHSA-h35f-9h28-mq5c\"], \"description\": \"## Summary  When building a source distribution (`python -m build --sdist` / `setup.py sdist`), setuptools' `FileList` applies `MANIFEST.in` directives (`exclude`, `global-exclude`, `recursive-exclude`, `prune`) by matching a compiled glob against on-disk file names **byte-for-byte, with no Unicode normalization**. On normalization-preserving filesystems (notably macOS APFS and HFS+), a file written in NFD and a `MANIFEST.in` rule written in NFC refer to the same file but are byte-distinct, so the exclusion silently fails to match. A file the maintainer intended to exclude is then packed into the `.tar.gz` and, if published, uploaded to the public, immutable PyPI index.  ## Details  File names in `FileList.files` come from `os.walk` (`setuptools/_distutils/filelist.py`, `_find_all_simple`), so on APFS a file written NFD is offered to the matcher in NFD, while the `MANIFEST.in` pattern carries the author's editor form (typically NFC). The matching path performs no canonicalization:  ```python # setuptools/command/egg_info.py  (FileList.global_exclude) def global_exclude(self, pattern):     match = translate_pattern(os.path.join('**', pattern))   # fnmatch.translate -> regex, no NFC/NFD     return self._remove_files(match.match)                   # byte-level regex over raw os.walk names ```  A rule written NFC (`caf\\u00e9` = `63 61 66 c3 a9`) does not match an on-disk name written NFD (`caf\\u00e9` = `63 61 66 65 cc 81`), even though the filesystem treats the two as one file.  A `unicodedata.normalize('NFD', ...)` helper exists in `setuptools/unicode_utils.py` (`decompose()`), but it is **never called in the manifest matching path**, so neither the pattern nor the walked path is normalized before matching. The only normalization in this area, `EggInfoCommand._manifest_normalize`, uses `filesys_decode` (bytes\\u2192str decode only, no NFC/NFD) and runs when writing `SOURCES.txt`, after matching has already occurred.  ## Impact  `MANIFEST.in` exclusions are the documented mechanism maintainers use to keep secrets, local configs, and private fixtures out of the published sdist. A non-ASCII excluded file may be published to the public, immutable PyPI index despite the rule \\u2014 an irreversible disclosure with no visual cue (NFC and NFD forms render identically). Exposure is filesystem-dependent and most relevant on macOS APFS/HFS+, where many maintainers build and publish. Pure-ASCII rules are unaffected.  ## Proof of concept  With a project containing `MANIFEST.in`:  ``` global-include *.txt *.json global-exclude secret_caf\\u00e9.txt    # rule saved NFC ```  and an on-disk file `secret_caf\\u00e9.txt` written in NFD, `python -m build --sdist` packs the secret file into the resulting `.tar.gz`, while an ASCII control file excluded by the same directive is correctly dropped \\u2014 isolating the bypass to the NFC-pattern vs. NFD-name mismatch. Reproduced on macOS APFS with setuptools 82.0.1.  ## Remediation  Normalize both the walked path and each `MANIFEST.in` pattern to a single canonical form before matching, in both `setuptools/command/egg_info.py` (`FileList`) and the vendored `setuptools/_distutils/filelist.py`. For an exclusion list, err toward excluding more, and document that `MANIFEST.in` matching is normalization-insensitive on macOS.  ## Credit  Reported by Tomas Illuminati. Coordinated via CERT/CC VINCE VU#604762.\"}]}, {\"name\": \"six\", \"version\": \"1.16.0\", \"vulns\": []}, {\"name\": \"sortedcontainers\", \"version\": \"2.4.0\", \"vulns\": []}, {\"name\": \"tomli\", \"version\": \"2.4.1\", \"vulns\": []}, {\"name\": \"tomli-w\", \"version\": \"1.2.0\", \"vulns\": []}, {\"name\": \"typing-extensions\", \"version\": \"4.16.0\", \"vulns\": []}, {\"name\": \"urllib3\", \"version\": \"2.7.0\", \"vulns\": []}, {\"name\": \"wheel\", \"version\": \"0.38.4\", \"vulns\": []}], \"fixes\": []}\n",
+    "raw_stderr": "Found 14 known vulnerabilities in 2 packages\n"
+  },
+  "lint": {
+    "language": "python",
+    "ruff_exit_code": 1,
+    "ruff_output": "a_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"invalid-syntax\",\n    \"end_location\": {\n      \"column\": 41,\n      \"row\": 149\n    },\n    \"filename\": \"/workspace/reTools.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 23,\n      \"row\": 149\n    },\n    \"message\": \"Simple statements must be separated by newlines or semicolons\",\n    \"name\": \"invalid-syntax\",\n    \"noqa_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"invalid-syntax\",\n    \"end_location\": {\n      \"column\": 37,\n      \"row\": 157\n    },\n    \"filename\": \"/workspace/reTools.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 19,\n      \"row\": 157\n    },\n    \"message\": \"Simple statements must be separated by newlines or semicolons\",\n    \"name\": \"invalid-syntax\",\n    \"noqa_row\": null,\n    \"severity\": \"error\",\n    \"url\": null\n  },\n  {\n    \"cell\": null,\n    \"code\": \"I001\",\n    \"end_location\": {\n      \"column\": 33,\n      \"row\": 1\n    },\n    \"filename\": \"/workspace/setup.py\",\n    \"fix\": {\n      \"applicability\": \"safe\",\n      \"edits\": [\n        {\n          \"content\": \"from distutils.core import setup\\r\\n\\r\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 2\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 1\n          }\n        }\n      ],\n      \"message\": \"Organize imports\"\n    },\n    \"location\": {\n      \"column\": 1,\n      \"row\": 1\n    },\n    \"message\": \"Import block is un-sorted or un-formatted\",\n    \"name\": \"unsorted-imports\",\n    \"noqa_row\": 1,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/unsorted-imports\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"I001\",\n    \"end_location\": {\n      \"column\": 33,\n      \"row\": 13\n    },\n    \"filename\": \"/workspace/setup23.py\",\n    \"fix\": {\n      \"applicability\": \"safe\",\n      \"edits\": [\n        {\n          \"content\": \"from distutils.core import setup\\r\\n\\r\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 14\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 13\n          }\n        }\n      ],\n      \"message\": \"Organize imports\"\n    },\n    \"location\": {\n      \"column\": 1,\n      \"row\": 13\n    },\n    \"message\": \"Import block is un-sorted or un-formatted\",\n    \"name\": \"unsorted-imports\",\n    \"noqa_row\": 13,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/unsorted-imports\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"I001\",\n    \"end_location\": {\n      \"column\": 15,\n      \"row\": 2\n    },\n    \"filename\": \"/workspace/tests/tests.py\",\n    \"fix\": {\n      \"applicability\": \"safe\",\n      \"edits\": [\n        {\n          \"content\": \"import os\\nimport sys\\nimport unittest\\n\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 3\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 1\n          }\n        }\n      ],\n      \"message\": \"Organize imports\"\n    },\n    \"location\": {\n      \"column\": 1,\n      \"row\": 1\n    },\n    \"message\": \"Import block is un-sorted or un-formatted\",\n    \"name\": \"unsorted-imports\",\n    \"noqa_row\": 1,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/unsorted-imports\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"I001\",\n    \"end_location\": {\n      \"column\": 18,\n      \"row\": 4\n    },\n    \"filename\": \"/workspace/tests/tests.py\",\n    \"fix\": {\n      \"applicability\": \"safe\",\n      \"edits\": [\n        {\n          \"content\": \"from FSA import *\\n\\n\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 6\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 4\n          }\n        }\n      ],\n      \"message\": \"Organize imports\"\n    },\n    \"location\": {\n      \"column\": 1,\n      \"row\": 4\n    },\n    \"message\": \"Import block is un-sorted or un-formatted\",\n    \"name\": \"unsorted-imports\",\n    \"noqa_row\": 4,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/unsorted-imports\"\n  }\n]",
+    "radon_exit_code": 0,
+    "radon_output": "{\"reCompiler.py\": {\"error\": \"invalid syntax (<unknown>, line 32)\"}, \"FSChartParser.py\": {\"error\": \"Missing parentheses in call to 'print'. Did you mean print(...)? (<unknown>, line 147)\"}, \"NumFSAUtils.py\": {\"error\": \"invalid decimal literal (<unknown>, line 75)\"}, \"PatternScanner.py\": {\"error\": \"Lambda expression parameters cannot be parenthesized (<unknown>, line 180)\"}, \"reTools.py\": {\"error\": \"Missing parentheses in call to 'print'. Did you mean print(...)? (<unknown>, line 47)\"}, \"Transducers.py\": {\"error\": \"Lambda expression parameters cannot be parenthesized (<unknown>, line 68)\"}, \"attic.py\": {\"error\": \"Missing parentheses in call to 'print'. Did you mean print(...)? (<unknown>, line 9)\"}, \"FSA.py\": {\"error\": \"Lambda expression parameters cannot be parenthesized (<unknown>, line 466)\"}, \"reDecompiler.py\": {\"error\": \"unterminated string literal (detected at line 248) (<unknown>, line 248)\"}, \"build/lib/reCompiler.py\": {\"error\": \"invalid syntax (<unknown>, line 32)\"}, \"build/lib/FSChartParser.py\": {\"error\": \"Missing parentheses in call to 'print'. Did you mean print(...)? (<unknown>, line 147)\"}, \"build/lib/NumFSAUtils.py\": {\"error\": \"invalid decimal literal (<unknown>, line 75)\"}, \"build/lib/FSA.py\": {\"error\": \"Lambda expression parameters cannot be parenthesized (<unknown>, line 466)\"}, \"examples/Patterns.py\": {\"error\": \"Missing parentheses in call to 'print'. Did you mean print(...)? (<unknown>, line 200)\"}, \"examples/PatternElement.py\": {\"error\": \"invalid syntax (<unknown>, line 74)\"}, \"tests/tests.py\": [{\"type\": \"class\", \"rank\": \"A\", \"name\": \"TestFSA\", \"endline\": 35, \"complexity\": 2, \"lineno\": 6, \"col_offset\": 0, \"methods\": [{\"type\": \"method\", \"rank\": \"A\", \"name\": \"setUp\", \"endline\": 8, \"complexity\": 1, \"lineno\": 7, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"testsRejects\", \"endline\": 12, \"complexity\": 1, \"lineno\": 10, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"testDeterminization\", \"endline\": 29, \"complexity\": 1, \"lineno\": 14, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"testMinimization\", \"endline\": 35, \"complexity\": 1, \"lineno\": 31, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}]}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"setUp\", \"endline\": 8, \"complexity\": 1, \"lineno\": 7, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"testsRejects\", \"endline\": 12, \"complexity\": 1, \"lineno\": 10, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"testDeterminization\", \"endline\": 29, \"complexity\": 1, \"lineno\": 14, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}, {\"type\": \"method\", \"rank\": \"A\", \"name\": \"testMinimization\", \"endline\": 35, \"complexity\": 1, \"lineno\": 31, \"classname\": \"TestFSA\", \"col_offset\": 4, \"closures\": []}]}\n"
+  },
+  "secrets_found": false,
+  "secrets_raw": {
+    "working_tree_findings": [],
+    "git_history_findings": []
+  },
+  "signals": {
+    "has_ci_config": false,
+    "has_license": true,
+    "has_tests_dir": true,
+    "readme_word_count": 62,
+    "large_files_over_50kb": [
+      "FSChartParser.html"
+    ]
+  }
+}

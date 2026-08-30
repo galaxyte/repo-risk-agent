@@ -1,0 +1,11 @@
+{
+  "repo_name": "path_mapper",
+  "model": "gpt-5",
+  "variant": "no_selfcheck",
+  "turns_used": 10,
+  "wall_clock_sec": 106.8,
+  "input_tokens": 96707,
+  "output_tokens": 9140,
+  "sandbox_available": true,
+  "reached_submit_report": true
+}

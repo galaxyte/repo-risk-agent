@@ -1,0 +1,72 @@
+{
+  "repo_name": "pyfsa",
+  "risk_score": 72,
+  "effort_multiplier": 2.3,
+  "summary": "PyFSA is an older, Python-2\u2013era finite-state automata library with minimal packaging and docs. Static analysis shows widespread Python 3 incompatibilities (print statements without parentheses, tuple-unpacking in lambdas, use of apply/InstanceType, etc.), plus several outright syntax errors. There\u2019s no modern dependency/packaging manifest, and no CI. Tests exist but are minimal and won\u2019t run under Python 3 without a port. Expect a significant modernization/porting effort before any feature work.",
+  "red_flags": [
+    {
+      "title": "Codebase is not Python 3 compatible (multiple syntax errors)",
+      "severity": "critical",
+      "evidence": "FSA.py:466; FSChartParser.py:147; reTools.py:47; PatternScanner.py:180; Transducers.py:68; reDecompiler.py:248",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py:466"
+    },
+    {
+      "title": "Legacy Python-2 constructs throughout (apply, InstanceType, filter/map assumptions)",
+      "severity": "high",
+      "evidence": "FSA.py (uses apply, old types like InstanceType/ListType/IntType/LongType); pervasive reliance on Python 2 semantics for filter/map/reduce and tuple-unpacking in lambdas",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "FSA.py:1"
+    },
+    {
+      "title": "No modern packaging or dependency manifest",
+      "severity": "medium",
+      "evidence": "setup.py present; no pyproject.toml, requirements.txt, or lockfile found",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "setup.py"
+    },
+    {
+      "title": "No continuous integration/config detected",
+      "severity": "medium",
+      "evidence": "No .github/workflows/, .travis.yml, or other CI config in repository tree",
+      "source": "static_manifest",
+      "tool_call_id": null,
+      "file_ref": "."
+    },
+    {
+      "title": "Unit tests minimal and not pytest-discoverable by default",
+      "severity": "low",
+      "evidence": "Single test module at tests/tests.py (named for unittest, not pytest pattern). Py3 run blocked by Python-2-only library code.",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "tests/tests.py"
+    },
+    {
+      "title": "Outdated project URL and documentation pointers",
+      "severity": "low",
+      "evidence": "setup.py URL points to http://osteele.com/software/pyfsa/; minimal README.txt; HTML docs checked-in but likely stale",
+      "source": "file_reference",
+      "tool_call_id": null,
+      "file_ref": "setup.py"
+    }
+  ],
+  "clarifying_questions": [
+    "What is the target Python version and runtime environment (CPython 3.x, PyPy, etc.)?",
+    "Is a full Python 3 port (dropping Python 2 compatibility) acceptable, or do you require dual-support?",
+    "What\u2019s in scope for this engagement: modernization/packaging/CI only, or new features as well?",
+    "Any constraints on licensing or redistribution under the Artistic License?",
+    "Do you need a published PyPI package and API docs, or just internal consumption?",
+    "Are there performance/scale requirements that influence algorithmic choices (e.g., large automata, NumPy-backed determinization)?",
+    "Do you have example inputs/expected outputs beyond the included tests to validate correctness after the port?",
+    "Which environments must we support (OS versions, architectures, optional dependencies like NumPy/GraphViz)?"
+  ],
+  "go_no_go": "go_with_conditions",
+  "rationale": "The codebase appears abandoned/legacy and is not runnable under modern Python without extensive changes. However, the scope is bounded (a small, self-contained library) and porting is feasible. Proceed if the client agrees to a funded Python 3 port, modernization of packaging/CI, and adding tests to lock in behavior.",
+  "build_status": "unknown",
+  "test_status": "unknown",
+  "test_pass_rate": null,
+  "vulnerability_summary": null
+}
